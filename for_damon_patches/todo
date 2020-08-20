@@ -4,14 +4,11 @@ TODOs
 - Support pmem (already done?)
 - Make debugfs interface simple and clean
  - Atomically pass a copy of constructed context to damon_start()?
+- Minimize fixed granularity overhead
+- Support cgroups
 
 
 Done
 ====
 
 - paddr: Add Reviewed-by from Brendan Higgins
-
-Pending
-=======
-- Reduce unnecessary filp_(open|close)() (Alkaid)
-  Users can increase the in-memory buffer size to reduce this overhead.
