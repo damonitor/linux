@@ -6,6 +6,8 @@ TODOs
  - Atomically pass a copy of constructed context to damon_start()?
 - Minimize fixed granularity overhead
 - Support cgroups
+- Support multi contexts from user space
+- Charge kdamond usage to requesting user space process
 
 
 Done
