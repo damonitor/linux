@@ -8,6 +8,8 @@ TODOs
 - Support cgroups
 - Support multi contexts from user space
 - Charge kdamond usage to requesting user space process
+- paddr: Fix memleak
+  (https://lore.kernel.org/linux-mm/CAJFQjcOCDFGq7pNgYWpKbrhBM5FQo76d274H8UU1ma_8TWjvuQ@mail.gmail.com/)
 
 
 Done
