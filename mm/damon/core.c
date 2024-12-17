@@ -1222,7 +1222,7 @@ int damon_call(struct damon_ctx *ctx, struct damon_call_control *control)
  * finishes handling of the request.
  *
  * The kdamond executes the given function in the main loop, for each region
- * just before it applies any DAMOS actions of @ctx to it.  The invocation is
+ * just after it applied any DAMOS actions of @ctx to it.  The invocation is
  * made only within one &damos->apply_interval_us since damos_walk()
  * invocation, for each scheme.  The given callback function can hence safely
  * access the internal data of &struct damon_ctx and &struct damon_region that
@@ -1438,11 +1438,9 @@ static bool damos_filter_out(struct damon_ctx *ctx, struct damon_target *t,
  * @r:		The region of @t that @s will be applied.
  * @s:		The scheme of @ctx that will be applied to @r.
  *
- * This function is called from kdamond whenever it found a region that
- * eligible to apply a DAMOS scheme's action.  If a DAMOS walk request is
- * installed by damos_walk() and its &damos_walk_control->walk_fn has not
- * invoked for the region for the last &damos->apply_interval_us interval,
- * invoke it.
+ * This function is called from kdamond whenever it asked the operation set to
+ * apply a DAMOS scheme action to a region.  If a DAMOS walk request is
+ * installed by damos_walk() and not yet uninstalled, invoke it.
  */
 static void damos_walk_call_walk(struct damon_ctx *ctx, struct damon_target *t,
 		struct damon_region *r, struct damos *s)
@@ -1463,8 +1461,8 @@ static void damos_walk_call_walk(struct damon_ctx *ctx, struct damon_target *t,
  * @s:		A scheme of @ctx that all walks are now done.
  *
  * This function is called when kdamond finished applying the action of a DAMOS
- * scheme to regions that eligible for the given &damos->apply_interval_us.  If
- * every scheme of @ctx including @s now finished walking for at least one
+ * scheme to all regions that eligible for the given &damos->apply_interval_us.
+ * If every scheme of @ctx including @s now finished walking for at least one
  * &damos->apply_interval_us, this function makrs the handling of the given
  * DAMOS walk request is done, so that damos_walk() can wake up and return.
  */
@@ -1565,7 +1563,6 @@ static void damos_apply_scheme(struct damon_ctx *c, struct damon_target *t,
 		if (damos_filter_out(c, t, r, s))
 			return;
 		ktime_get_coarse_ts64(&begin);
-		damos_walk_call_walk(c, t, r, s);
 		if (c->callback.before_damos_apply)
 			err = c->callback.before_damos_apply(c, t, r, s);
 		if (!err) {
@@ -1573,6 +1570,7 @@ static void damos_apply_scheme(struct damon_ctx *c, struct damon_target *t,
 					damon_nr_regions(t), do_trace);
 			sz_applied = c->ops.apply_scheme(c, t, r, s);
 		}
+		damos_walk_call_walk(c, t, r, s);
 		ktime_get_coarse_ts64(&end);
 		quota->total_charged_ns += timespec64_to_ns(&end) -
 			timespec64_to_ns(&begin);
