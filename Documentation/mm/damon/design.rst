@@ -504,9 +504,21 @@ have a list of latency-critical processes.
 
 To let users optimize DAMOS schemes with such special knowledge, DAMOS provides
 a feature called DAMOS filters.  The feature allows users to set an arbitrary
-number of filters for each scheme.  Each filter specifies the type of target
-memory, and whether it should exclude the memory of the type (filter-out), or
-all except the memory of the type (filter-in).
+number of filters for each scheme.  Each filter specifies
+- a type of memory,
+- whether it is for the memory of the type or all except the type, and
+- whether it is to allow (pass through the filter) or reject applying the
+  scheme's action to the memory.
+
+When multiple filters are installed, each filter is applied in the installed
+order.  If a memory is matched to one of the filter, followup filters are
+ignored.  For example, let's assume a filter for passing anonymous pages and
+another filter for blocking young pages are installed in the order.  If a page
+of a region that eligible to apply the scheme's action is an anonymous page,
+the scheme's action will be applied to the page regardless of whether it is
+young, since it matches with the first filter.  On the other hand, if a page of
+the region is a non-anonymous page, the scheme's action will be applied only if
+the page is young, since the second filter is also applied.
 
 For efficient handling of filters, some types of filters are handled by the
 core layer, while others are handled by operations set.  In the latter case,
