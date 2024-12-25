@@ -631,7 +631,7 @@ scheme's execution.
 "A scheme is tried to be applied to a region" means DAMOS core logic determined
 the region is eligible to apply the scheme's :ref:`action
 <damon_design_damos_action>`.  The :ref:`access pattern
-<damon_design_damos_access_patter>`, :ref:`quotas <damon_design_damos_quotas>`,
+<damon_design_damos_access_pattern>`, :ref:`quotas <damon_design_damos_quotas>`,
 :ref:`watermarks <damon_design_damos_watermarks>`, and :ref:`filters
 <damon_design_damos_filters>` that handled on core logic could affect this.
 The core logic will only ask the underlying :ref:`operation set
