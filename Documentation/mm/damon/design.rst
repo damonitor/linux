@@ -562,6 +562,7 @@ have a list of latency-critical processes.
 To let users optimize DAMOS schemes with such special knowledge, DAMOS provides
 a feature called DAMOS filters.  The feature allows users to set an arbitrary
 number of filters for each scheme.  Each filter specifies
+
 - a type of memory,
 - whether it is for the memory of the type or all except the type, and
 - whether it is to allow (pass through the filter) or reject applying the
