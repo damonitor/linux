@@ -203,7 +203,7 @@ This scheme, however, cannot preserve the quality of the output if the
 assumption is not guaranteed.
 
 
-.. _damon_design_adasptive_regions_adjustment:
+.. _damon_design_adaptive_regions_adjustment:
 
 Adaptive Regions Adjustment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
