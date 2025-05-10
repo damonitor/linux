@@ -10,6 +10,11 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
+#ifdef MODULE_PARAM_PREFIX
+#undef MODULE_PARAM_PREFIX
+#endif
+#define MODULE_PARAM_PREFIX "damon_stat."
+
 static int damon_stat_enable_store(
 		const char *val, const struct kernel_param *kp);
 
