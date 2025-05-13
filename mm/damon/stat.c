@@ -3,7 +3,7 @@
  * Shows data access monitoring resutls in simple metrics.
  */
 
-#define pr_fmt(fmt) "damon_stat: " fmt
+#define pr_fmt(fmt) "damon-stat: " fmt
 
 #include <linux/damon.h>
 #include <linux/init.h>
@@ -19,24 +19,24 @@
 static int damon_stat_enable_store(
 		const char *val, const struct kernel_param *kp);
 
-static const struct kernel_param_ops enable_param_ops = {
+static const struct kernel_param_ops enabled_param_ops = {
 	.set = damon_stat_enable_store,
 	.get = param_get_bool,
 };
 
 static bool enabled __read_mostly;
-module_param_cb(enabled, &enable_param_ops, &enabled, 0600);
+module_param_cb(enabled, &enabled_param_ops, &enabled, 0600);
 MODULE_PARM_DESC(enabled, "Enable of disable DAMON_STAT");
 
 static unsigned long estimated_memory_bandwidth __read_mostly = 0;
 module_param(estimated_memory_bandwidth, ulong, 0400);
 MODULE_PARM_DESC(estimated_memory_bandwidth,
-		"Show estimated system's memory bandwidth usage");
+		"Estimated memory bandwidth usage");
 
 static unsigned long page_idletime_percentiles_ms[101] __read_mostly = {0,};
 module_param_array(page_idletime_percentiles_ms, ulong, NULL, 0400);
 MODULE_PARM_DESC(page_idletime_percentiles_ms,
-		"Show per-page idle time percentiles");
+		"Per-page idle time percentiles");
 
 static struct damon_ctx *damon_stat_context;
 
