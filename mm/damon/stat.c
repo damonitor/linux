@@ -24,7 +24,7 @@ static const struct kernel_param_ops enabled_param_ops = {
 	.get = param_get_bool,
 };
 
-static bool enabled __read_mostly;
+static bool enabled __read_mostly = CONFIG_DAMON_STAT_ENABLED_DEFAULT;
 module_param_cb(enabled, &enabled_param_ops, &enabled, 0600);
 MODULE_PARM_DESC(enabled, "Enable of disable DAMON_STAT");
 
