@@ -33,9 +33,9 @@ module_param(estimated_memory_bandwidth, ulong, 0400);
 MODULE_PARM_DESC(estimated_memory_bandwidth,
 		"Estimated memory bandwidth usage");
 
-static unsigned long page_idletime_percentiles_ms[101] __read_mostly = {0,};
-module_param_array(page_idletime_percentiles_ms, ulong, NULL, 0400);
-MODULE_PARM_DESC(page_idletime_percentiles_ms,
+static unsigned long memory_idle_ms_percentiles[101] __read_mostly = {0,};
+module_param_array(memory_idle_ms_percentiles, ulong, NULL, 0400);
+MODULE_PARM_DESC(memory_idle_ms_percentiles,
 		"Per-page idle time percentiles");
 
 static struct damon_ctx *damon_stat_context;
@@ -99,7 +99,7 @@ static void damon_stat_set_idletime_percentiles(struct damon_ctx *c)
 		region = sorted_regions[i];
 		accounted_bytes += region->ar.end - region->ar.start;
 		while (next_percentile <= accounted_bytes * 100 / total_sz)
-			page_idletime_percentiles_ms[next_percentile++] =
+			memory_idle_ms_percentiles[next_percentile++] =
 				damon_stat_idletime(region) *
 				c->attrs.aggr_interval / USEC_PER_MSEC;
 	}
