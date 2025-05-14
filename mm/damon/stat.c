@@ -31,12 +31,12 @@ MODULE_PARM_DESC(enabled, "Enable of disable DAMON_STAT");
 static unsigned long estimated_memory_bandwidth __read_mostly = 0;
 module_param(estimated_memory_bandwidth, ulong, 0400);
 MODULE_PARM_DESC(estimated_memory_bandwidth,
-		"Estimated memory bandwidth usage");
+		"Estimated memory bandwidth usage in bytes per second");
 
 static unsigned long memory_idle_ms_percentiles[101] __read_mostly = {0,};
 module_param_array(memory_idle_ms_percentiles, ulong, NULL, 0400);
 MODULE_PARM_DESC(memory_idle_ms_percentiles,
-		"Per-page idle time percentiles");
+		"Memory idle time percentiles in milliseconds");
 
 static struct damon_ctx *damon_stat_context;
 
