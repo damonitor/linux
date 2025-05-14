@@ -16,11 +16,11 @@
 #endif
 #define MODULE_PARAM_PREFIX "damon_stat."
 
-static int damon_stat_enable_store(
+static int damon_stat_enabled_store(
 		const char *val, const struct kernel_param *kp);
 
 static const struct kernel_param_ops enabled_param_ops = {
-	.set = damon_stat_enable_store,
+	.set = damon_stat_enabled_store,
 	.get = param_get_bool,
 };
 
@@ -198,7 +198,7 @@ static void damon_stat_stop(void)
 
 static bool damon_stat_init_called = false;
 
-static int damon_stat_enable_store(
+static int damon_stat_enabled_store(
 		const char *val, const struct kernel_param *kp)
 {
 	bool is_enabled = enabled;
