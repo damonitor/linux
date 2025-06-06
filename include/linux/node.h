@@ -126,7 +126,6 @@ static inline void register_memory_blocks_under_nodes(void)
 
 extern void unregister_node(struct node *node);
 
-#ifdef CONFIG_MEMORY_HOTPLUG
 struct node_notify {
 	int nid;
 };
@@ -164,7 +163,6 @@ static inline int hotplug_node_notifier(notifier_fn_t fn, int pri)
 {
 	return 0;
 }
-#endif
 #endif
 
 #ifdef CONFIG_NUMA
