@@ -20,6 +20,11 @@ def dump_damon_status_dict(pid):
     except Exception as e:
         return None, 'json.load fail (%s)' % e
 
+def fail(expectation, status):
+    print('unexpected %s' % expectation)
+    print(json.dumps(status, indent=4))
+    exit(1)
+
 def main():
     kdamonds = _damon_sysfs.Kdamonds(
             [_damon_sysfs.Kdamond(contexts=[_damon_sysfs.DamonCtx()])])
@@ -34,41 +39,32 @@ def main():
         exit(1)
 
     if len(status['contexts']) != 1:
-        print('number of contexts: %d' % len(status['contexts']))
-        exit(1)
+        fail('number of contexts', status)
 
     ctx = status['contexts'][0]
     attrs = ctx['attrs']
     if attrs['sample_interval'] != 5000:
-        print('unexpected sample interval')
-        exit(1)
+        fail('sample interval', status)
     if attrs['aggr_interval'] != 100000:
-        print('unexpected aggr interval')
-        exit(1)
+        fail('aggr interval', status)
     if attrs['ops_update_interval'] != 1000000:
-        print('unexpected ops update interval')
-        exit(1)
+        fail('ops updte interval', status)
 
     if attrs['intervals_goal'] != {
             'access_bp': 0, 'aggrs': 0,
             'min_sample_us': 0, 'max_sample_us': 0}:
-        print('unexpected intervals goal')
-        exit(1)
+        fail('intervals goal', status)
 
     if attrs['min_nr_regions'] != 10:
-        print('unexpected min_nr_regions')
-        exit(1)
+        fail('min_nr_regions', status)
     if attrs['max_nr_regions'] != 1000:
-        print('unexpected max_nr_regions')
-        exit(1)
+        fail('max_nr_regions', status)
 
     if ctx['adaptive_targets'] != []:
-        print('unexpected adaptive_targets')
-        exit(1)
+        fail('adaptive targets', status)
 
     if ctx['schemes'] != []:
-        print('unexpected schemes')
-        exit(1)
+        fail('schemes', status)
 
     kdamonds.stop()
 
