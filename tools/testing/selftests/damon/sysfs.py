@@ -100,6 +100,15 @@ def main():
             }:
         fail('damos quota', status)
 
+    if scheme['wmarks'] != {
+            'metric': 0,
+            'interval': 0,
+            'high': 0,
+            'mid': 0,
+            'low': 0,
+            }:
+        fail('damos wmarks', status)
+
     kdamonds.stop()
 
 if __name__ == '__main__':
