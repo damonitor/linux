@@ -48,6 +48,12 @@ def main():
         print('unexpected ops update interval')
         exit(1)
 
+    if attrs['intervals_goal'] != {
+            'access_bp': 0, 'aggrs': 0,
+            'min_sample_us': 0, 'max_sample_us': 0}:
+        print('unexpected intervals goal')
+        exit(1)
+
     kdamonds.stop()
 
 if __name__ == '__main__':
