@@ -35,6 +35,19 @@ def main():
     if len(status['contexts']) != 1:
         print('number of contexts: %d' % len(status['contexts']))
         exit(1)
+
+    ctx = status['contexts'][0]
+    attrs = ctx['attrs']
+    if attrs['sample_interval'] != 5000:
+        print('unexpected sample interval')
+        exit(1)
+    if attrs['aggr_interval'] != 100000:
+        print('unexpected aggr interval')
+        exit(1)
+    if attrs['ops_update_interval'] != 1000000:
+        print('unexpected ops update interval')
+        exit(1)
+
     kdamonds.stop()
 
 if __name__ == '__main__':
