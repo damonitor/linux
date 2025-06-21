@@ -55,6 +55,13 @@ def main():
         print('unexpected intervals goal')
         exit(1)
 
+    if attrs['min_nr_regions'] != 10:
+        print('unexpected min_nr_regions')
+        exit(1)
+    if attrs['max_nr_regions'] != 1000:
+        print('unexpected max_nr_regions')
+        exit(1)
+
     kdamonds.stop()
 
 if __name__ == '__main__':
