@@ -10,7 +10,8 @@ import _damon_sysfs
 def dump_damon_status_dict(pid):
     file_dir = os.path.dirname(os.path.abspath(__file__))
     dump_script = os.path.join(file_dir, 'drgn_dump_damon_status.py')
-    rc = subprocess.call(['drgn', dump_script, pid, 'damon_dump_output'])
+    rc = subprocess.call(['drgn', dump_script, pid, 'damon_dump_output'],
+                         stderr=subprocess.DEVNULL)
     if rc != 0:
         return None, 'drgn fail'
     try:
