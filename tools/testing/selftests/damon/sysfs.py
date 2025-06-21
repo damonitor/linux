@@ -81,6 +81,12 @@ def main():
             'max_age_region': 2**32 - 1,
             }:
         fail('damos pattern', status)
+    if scheme['action'] != 9:   # stat
+        fail('damos action', status)
+    if scheme['apply_interval_us'] != 0:
+        fail('damos apply interval', status)
+    if scheme['target_nid'] != -1:
+        fail('damos target nid', status)
 
     kdamonds.stop()
 
