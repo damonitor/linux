@@ -88,6 +88,18 @@ def main():
     if scheme['target_nid'] != -1:
         fail('damos target nid', status)
 
+    if scheme['quota'] != {
+            'reset_interval': 0,
+            'ms': 0,
+            'sz': 0,
+            'goals': [],
+            'esz': 0,
+            'weight_sz': 0,
+            'weight_nr_accesses': 0,
+            'weight_age': 0,
+            }:
+        fail('damos quota', status)
+
     kdamonds.stop()
 
 if __name__ == '__main__':
