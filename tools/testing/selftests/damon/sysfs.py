@@ -62,6 +62,14 @@ def main():
         print('unexpected max_nr_regions')
         exit(1)
 
+    if ctx['adaptive_targets'] != []:
+        print('unexpected adaptive_targets')
+        exit(1)
+
+    if ctx['schemes'] != []:
+        print('unexpected schemes')
+        exit(1)
+
     kdamonds.stop()
 
 if __name__ == '__main__':
