@@ -198,8 +198,6 @@ static void damon_sample_mtier_stop(void)
 	damon_destroy_ctx(ctxs[1]);
 }
 
-static bool init_called;
-
 static int damon_sample_mtier_enable_store(
 		const char *val, const struct kernel_param *kp)
 {
@@ -213,7 +211,7 @@ static int damon_sample_mtier_enable_store(
 	if (enable == enabled)
 		return 0;
 
-	if (!init_called)
+	if (!damon_initialized())
 		return 0;
 
 	if (enable) {
@@ -230,13 +228,15 @@ static int __init damon_sample_mtier_init(void)
 {
 	int err = 0;
 
-	init_called = true;
+	if (!damon_initialized())
+		return -ENOMEM;
+
 	if (enable) {
 		err = damon_sample_mtier_start();
 		if (err)
 			enable = false;
 	}
-	return 0;
+	return err;
 }
 
 module_init(damon_sample_mtier_init);
