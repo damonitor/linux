@@ -1010,6 +1010,7 @@ static void damon_test_commit_target_regions_for(struct kunit *test,
 		KUNIT_EXPECT_EQ(test, r->ar.end, expect_start_end[i][1]);
 		i++;
 	}
+	KUNIT_EXPECT_EQ(test, damon_nr_regions(dst_target), nr_expect_regions);
 	KUNIT_EXPECT_EQ(test, i, nr_expect_regions);
 	damon_free_target(dst_target);
 	damon_free_target(src_target);
