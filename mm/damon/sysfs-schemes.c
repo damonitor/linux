@@ -199,12 +199,19 @@ static const struct kobj_type damon_sysfs_scheme_regions_ktype = {
 struct damon_sysfs_stats {
 	struct kobject kobj;
 	unsigned long nr_tried;
+	unsigned long max_nr_tried;
 	unsigned long sz_tried;
+	unsigned long max_sz_tried;
 	unsigned long nr_applied;
+	unsigned long max_nr_applied;
 	unsigned long sz_applied;
+	unsigned long max_sz_applied;
 	unsigned long sz_ops_filter_passed;
+	unsigned long max_sz_ops_filter_passed;
 	unsigned long qt_exceeds;
+	unsigned long max_qt_exceeds;
 	unsigned long nr_snapshots;
+	unsigned long max_nr_snapshots;
 };
 
 static struct damon_sysfs_stats *damon_sysfs_stats_alloc(void)
@@ -221,6 +228,28 @@ static ssize_t nr_tried_show(struct kobject *kobj, struct kobj_attribute *attr,
 	return sysfs_emit(buf, "%lu\n", stats->nr_tried);
 }
 
+static ssize_t max_nr_tried_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+
+	return sysfs_emit(buf, "%lu\n", stats->max_nr_tried);
+}
+
+static ssize_t max_nr_tried_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+	unsigned long max_nr_tried, err = kstrtoul(buf, 0, &max_nr_tried);
+
+	if (err)
+		return err;
+	stats->max_nr_tried = max_nr_tried;
+	return count;
+}
+
 static ssize_t sz_tried_show(struct kobject *kobj, struct kobj_attribute *attr,
 		char *buf)
 {
@@ -228,6 +257,28 @@ static ssize_t sz_tried_show(struct kobject *kobj, struct kobj_attribute *attr,
 			struct damon_sysfs_stats, kobj);
 
 	return sysfs_emit(buf, "%lu\n", stats->sz_tried);
+}
+
+static ssize_t max_sz_tried_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+
+	return sysfs_emit(buf, "%lu\n", stats->max_sz_tried);
+}
+
+static ssize_t max_sz_tried_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+	unsigned long max_sz_tried, err = kstrtoul(buf, 0, &max_sz_tried);
+
+	if (err)
+		return err;
+	stats->max_sz_tried = max_sz_tried;
+	return count;
 }
 
 static ssize_t nr_applied_show(struct kobject *kobj,
@@ -239,6 +290,28 @@ static ssize_t nr_applied_show(struct kobject *kobj,
 	return sysfs_emit(buf, "%lu\n", stats->nr_applied);
 }
 
+static ssize_t max_nr_applied_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+
+	return sysfs_emit(buf, "%lu\n", stats->max_nr_applied);
+}
+
+static ssize_t max_nr_applied_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+	unsigned long max_nr_applied, err = kstrtoul(buf, 0, &max_nr_applied);
+
+	if (err)
+		return err;
+	stats->max_nr_applied = max_nr_applied;
+	return count;
+}
+
 static ssize_t sz_applied_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
@@ -246,6 +319,28 @@ static ssize_t sz_applied_show(struct kobject *kobj,
 			struct damon_sysfs_stats, kobj);
 
 	return sysfs_emit(buf, "%lu\n", stats->sz_applied);
+}
+
+static ssize_t max_sz_applied_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+
+	return sysfs_emit(buf, "%lu\n", stats->max_sz_applied);
+}
+
+static ssize_t max_sz_applied_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+	unsigned long max_sz_applied, err = kstrtoul(buf, 0, &max_sz_applied);
+
+	if (err)
+		return err;
+	stats->max_sz_applied = max_sz_applied;
+	return count;
 }
 
 static ssize_t sz_ops_filter_passed_show(struct kobject *kobj,
@@ -257,6 +352,28 @@ static ssize_t sz_ops_filter_passed_show(struct kobject *kobj,
 	return sysfs_emit(buf, "%lu\n", stats->sz_ops_filter_passed);
 }
 
+static ssize_t max_sz_ops_filter_passed_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+
+	return sysfs_emit(buf, "%lu\n", stats->max_sz_ops_filter_passed);
+}
+
+static ssize_t max_sz_ops_filter_passed_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+	unsigned long max_sz_ops_filter_passed, err = kstrtoul(buf, 0, &max_sz_ops_filter_passed);
+
+	if (err)
+		return err;
+	stats->max_sz_ops_filter_passed = max_sz_ops_filter_passed;
+	return count;
+}
+
 static ssize_t qt_exceeds_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
@@ -264,6 +381,28 @@ static ssize_t qt_exceeds_show(struct kobject *kobj,
 			struct damon_sysfs_stats, kobj);
 
 	return sysfs_emit(buf, "%lu\n", stats->qt_exceeds);
+}
+
+static ssize_t max_qt_exceeds_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+
+	return sysfs_emit(buf, "%lu\n", stats->max_qt_exceeds);
+}
+
+static ssize_t max_qt_exceeds_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+	unsigned long max_qt_exceeds, err = kstrtoul(buf, 0, &max_qt_exceeds);
+
+	if (err)
+		return err;
+	stats->max_qt_exceeds = max_qt_exceeds;
+	return count;
 }
 
 static ssize_t nr_snapshots_show(struct kobject *kobj,
@@ -275,6 +414,28 @@ static ssize_t nr_snapshots_show(struct kobject *kobj,
 	return sysfs_emit(buf, "%lu\n", stats->nr_snapshots);
 }
 
+static ssize_t max_nr_snapshots_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+
+	return sysfs_emit(buf, "%lu\n", stats->max_nr_snapshots);
+}
+
+static ssize_t max_nr_snapshots_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_stats *stats = container_of(kobj,
+			struct damon_sysfs_stats, kobj);
+	unsigned long max_nr_snapshots, err = kstrtoul(buf, 0, &max_nr_snapshots);
+
+	if (err)
+		return err;
+	stats->max_nr_snapshots = max_nr_snapshots;
+	return count;
+}
+
 static void damon_sysfs_stats_release(struct kobject *kobj)
 {
 	kfree(container_of(kobj, struct damon_sysfs_stats, kobj));
@@ -283,32 +444,60 @@ static void damon_sysfs_stats_release(struct kobject *kobj)
 static struct kobj_attribute damon_sysfs_stats_nr_tried_attr =
 		__ATTR_RO_MODE(nr_tried, 0400);
 
+static struct kobj_attribute damon_sysfs_stats_max_nr_tried_attr =
+		__ATTR_RW_MODE(max_nr_tried, 0600);
+
 static struct kobj_attribute damon_sysfs_stats_sz_tried_attr =
 		__ATTR_RO_MODE(sz_tried, 0400);
+
+static struct kobj_attribute damon_sysfs_stats_max_sz_tried_attr =
+		__ATTR_RW_MODE(max_sz_tried, 0600);
 
 static struct kobj_attribute damon_sysfs_stats_nr_applied_attr =
 		__ATTR_RO_MODE(nr_applied, 0400);
 
+static struct kobj_attribute damon_sysfs_stats_max_nr_applied_attr =
+		__ATTR_RW_MODE(max_nr_applied, 0600);
+
 static struct kobj_attribute damon_sysfs_stats_sz_applied_attr =
 		__ATTR_RO_MODE(sz_applied, 0400);
+
+static struct kobj_attribute damon_sysfs_stats_max_sz_applied_attr =
+		__ATTR_RW_MODE(max_sz_applied, 0600);
 
 static struct kobj_attribute damon_sysfs_stats_sz_ops_filter_passed_attr =
 		__ATTR_RO_MODE(sz_ops_filter_passed, 0400);
 
+static struct kobj_attribute damon_sysfs_stats_max_sz_ops_filter_passed_attr =
+		__ATTR_RW_MODE(max_sz_ops_filter_passed, 0600);
+
 static struct kobj_attribute damon_sysfs_stats_qt_exceeds_attr =
 		__ATTR_RO_MODE(qt_exceeds, 0400);
+
+static struct kobj_attribute damon_sysfs_stats_max_qt_exceeds_attr =
+		__ATTR_RW_MODE(max_qt_exceeds, 0600);
 
 static struct kobj_attribute damon_sysfs_stats_nr_snapshots_attr =
 		__ATTR_RO_MODE(nr_snapshots, 0400);
 
+static struct kobj_attribute damon_sysfs_stats_max_nr_snapshots_attr =
+		__ATTR_RW_MODE(max_nr_snapshots, 0600);
+
 static struct attribute *damon_sysfs_stats_attrs[] = {
 	&damon_sysfs_stats_nr_tried_attr.attr,
+	&damon_sysfs_stats_max_nr_tried_attr.attr,
 	&damon_sysfs_stats_sz_tried_attr.attr,
+	&damon_sysfs_stats_max_sz_tried_attr.attr,
 	&damon_sysfs_stats_nr_applied_attr.attr,
+	&damon_sysfs_stats_max_nr_applied_attr.attr,
 	&damon_sysfs_stats_sz_applied_attr.attr,
+	&damon_sysfs_stats_max_sz_applied_attr.attr,
 	&damon_sysfs_stats_sz_ops_filter_passed_attr.attr,
+	&damon_sysfs_stats_max_sz_ops_filter_passed_attr.attr,
 	&damon_sysfs_stats_qt_exceeds_attr.attr,
+	&damon_sysfs_stats_max_qt_exceeds_attr.attr,
 	&damon_sysfs_stats_nr_snapshots_attr.attr,
+	&damon_sysfs_stats_max_nr_snapshots_attr.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(damon_sysfs_stats);
@@ -2682,6 +2871,18 @@ static int damos_sysfs_add_migrate_dest(struct damos *scheme,
 	return 0;
 }
 
+static void damos_sysfs_set_max_stat(struct damos_stat *max_stat,
+		struct damon_sysfs_stats *sysfs_stats)
+{
+	max_stat->nr_tried = sysfs_stats->max_nr_tried;
+	max_stat->sz_tried = sysfs_stats->max_sz_tried;
+	max_stat->nr_applied = sysfs_stats->max_nr_applied;
+	max_stat->sz_applied = sysfs_stats->max_sz_applied;
+	max_stat->sz_ops_filter_passed = sysfs_stats->max_sz_ops_filter_passed;
+	max_stat->qt_exceeds = sysfs_stats->max_qt_exceeds;
+	max_stat->nr_snapshots = sysfs_stats->max_nr_snapshots;
+}
+
 static struct damos *damon_sysfs_mk_scheme(
 		struct damon_sysfs_scheme *sysfs_scheme)
 {
@@ -2749,6 +2950,7 @@ static struct damos *damon_sysfs_mk_scheme(
 		damon_destroy_scheme(scheme);
 		return NULL;
 	}
+	damos_sysfs_set_max_stat(&scheme->max_stat, sysfs_scheme->stats);
 	return scheme;
 }
 
