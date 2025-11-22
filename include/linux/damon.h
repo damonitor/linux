@@ -541,6 +541,7 @@ struct damos_migrate_dests {
  * @ops_filters:	ops layer handling &struct damos_filter objects list.
  * @last_applied:	Last @action applied ops-managing entity.
  * @stat:		Statistics of this scheme.
+ * @max_stat:		Upper limit of stats.
  * @list:		List head for siblings.
  *
  * For each @apply_interval_us, DAMON finds regions which fit in the
@@ -587,6 +588,9 @@ struct damos_migrate_dests {
  * finished.
  *
  * After applying the &action to each region, &stat is updated.
+ *
+ * If any of updated stat exceeds that of &max_stats that is non-zero, the
+ * scheme is deactivated.
  */
 struct damos {
 	struct damos_access_pattern pattern;
@@ -626,6 +630,7 @@ struct damos {
 	struct list_head ops_filters;
 	void *last_applied;
 	struct damos_stat stat;
+	struct damos_stat max_stat;
 	struct list_head list;
 };
 

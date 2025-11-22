@@ -419,6 +419,7 @@ struct damos *damon_new_scheme(struct damos_access_pattern *pattern,
 	INIT_LIST_HEAD(&scheme->core_filters);
 	INIT_LIST_HEAD(&scheme->ops_filters);
 	scheme->stat = (struct damos_stat){};
+	scheme->max_stat = (struct damos_stat){};
 	INIT_LIST_HEAD(&scheme->list);
 
 	scheme->quota = *(damos_quota_init(quota));
@@ -1788,6 +1789,27 @@ static bool damos_skip_charged_region(struct damon_target *t,
 	return false;
 }
 
+static bool damos_max_stat_exceeded(struct damos *s)
+{
+	if (s->max_stat.nr_tried && s->max_stat.nr_tried <= s->stat.nr_tried)
+		return true;
+	if (s->max_stat.sz_tried && s->max_stat.sz_tried <= s->stat.sz_tried)
+		return true;
+	if (s->max_stat.sz_tried &&
+			s->max_stat.nr_applied <= s->stat.nr_applied)
+		return true;
+	if (s->max_stat.sz_tried && s->max_stat.sz_ops_filter_passed <=
+			s->stat.sz_ops_filter_passed)
+		return true;
+	if (s->max_stat.sz_tried &&
+			s->max_stat.qt_exceeds <= s->stat.qt_exceeds)
+		return true;
+	if (s->max_stat.sz_tried &&
+			s->max_stat.nr_snapshots <= s->stat.nr_snapshots)
+		return true;
+	return false;
+}
+
 static void damos_update_stat(struct damos *s,
 		unsigned long sz_tried, unsigned long sz_applied,
 		unsigned long sz_ops_filter_passed)
@@ -2049,6 +2071,9 @@ static void damon_do_apply_schemes(struct damon_ctx *c,
 			continue;
 
 		if (damos_skip_charged_region(t, &r, s, c->min_sz_region))
+			continue;
+
+		if (damos_max_stat_exceeded(s))
 			continue;
 
 		if (damos_valid_target(c, t, r, s))
