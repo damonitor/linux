@@ -562,6 +562,46 @@ unsigned int damon_nr_regions(struct damon_target *t)
 	return t->nr_regions;
 }
 
+struct damon_report_filter *damon_new_report_filter(
+		enum damon_report_filter_type *filter_type, bool matcing,
+		bool allow)
+{
+	struct damon_report_filter *filter;
+
+	filter = kmalloc(sizeof(*filter), GFP_KERNEL);
+	if (!filter)
+		return NULL;
+	filter->type = filter_type;
+	filter->matching = matching;
+	filter->allow = allow;
+	INIT_LIST_HEAD(&filter->list);
+	return filter;
+}
+
+void damon_add_report_filter(struct damon_access_check_control *ctrl,
+		struct damon_report_filter *filter)
+{
+	list_add_tail(&filter->list, &ctrl->report_filters);
+}
+
+static void damon_del_report_filter(struct damon_report_filter *f,
+		struct damon_access_check_control *ctrl)
+{
+	list_del(&f->list);
+}
+
+static void damon_free_report_filter(struct damon_report_filter *f)
+{
+	kfree(f);
+}
+
+void damon_destroy_report_filter(struct damon_report_filter *f,
+		struct damon_access_check_control *ctrl)
+{
+	damon_del_report_filter(f, ctrl);
+	damon_free_report_filter(f);
+}
+
 struct damon_ctx *damon_new_ctx(void)
 {
 	struct damon_ctx *ctx;

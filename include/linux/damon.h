@@ -1085,6 +1085,14 @@ void damon_free_target(struct damon_target *t);
 void damon_destroy_target(struct damon_target *t, struct damon_ctx *ctx);
 unsigned int damon_nr_regions(struct damon_target *t);
 
+struct damon_report_filter *damon_new_report_filter(
+		enum damon_report_filter_type *filter_type, bool matching,
+		bool allow);
+void damon_add_report_filter(struct damon_access_check_control *ctrl,
+		struct damon_report_filter *filter);
+void damon_destroy_report_filter(struct damon_report_filter *filter,
+		struct damon_access_check_control *ctrl);
+
 struct damon_ctx *damon_new_ctx(void);
 void damon_destroy_ctx(struct damon_ctx *ctx);
 int damon_set_attrs(struct damon_ctx *ctx, struct damon_attrs *attrs);
