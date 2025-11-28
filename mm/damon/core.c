@@ -1338,7 +1338,6 @@ static void damon_commit_report_filter_arg(struct damon_report_filter *dst,
 		dst->cpus = src->cpus;
 		break;
 	case DAMON_FILTER_TYPE_WRITE:
-		dst->write = src->write;
 		break;
 	default:
 		break;

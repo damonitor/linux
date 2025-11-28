@@ -862,17 +862,13 @@ enum damon_report_filter_type {
  * @matching:	Whether is is for condition-matching reports.
  * @allow:	Whether to include or excludie the @matching reports.
  * @cpus:	Access-originated CPUs if @type is DAMON_FILTER_TYPE_CPUS.
- * @write:	If the access was writing if @type is DAMOS_FILTER_TYPE_WRITE.
  * @list:	List head for siblings.
  */
 struct damon_report_filter {
 	enum damon_report_filter_type type;
 	bool matching;
 	bool allow;
-	union {
-		cpumask_t cpus;
-		bool write;
-	};
+	cpumask_t cpus;
 	struct list_head list;
 };
 
