@@ -1004,6 +1004,12 @@ static inline unsigned long damon_sz_region(struct damon_region *r)
 #define damon_for_each_target_safe(t, next, ctx)	\
 	list_for_each_entry_safe(t, next, &(ctx)->adaptive_targets, list)
 
+#define damon_for_each_report_filter(f, control) \
+	list_for_each_entry(f, &control->report_filters, list)
+
+#define damon_for_each_report_filter_safe(f, next, control) \
+	list_for_each_entry_safe(f, next, &control->report_filteers, list)
+
 #define damon_for_each_scheme(s, ctx) \
 	list_for_each_entry(s, &(ctx)->schemes, list)
 
