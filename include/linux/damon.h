@@ -1008,7 +1008,7 @@ static inline unsigned long damon_sz_region(struct damon_region *r)
 	list_for_each_entry(f, &control->report_filters, list)
 
 #define damon_for_each_report_filter_safe(f, next, control) \
-	list_for_each_entry_safe(f, next, &control->report_filteers, list)
+	list_for_each_entry_safe(f, next, &control->report_filters, list)
 
 #define damon_for_each_scheme(s, ctx) \
 	list_for_each_entry(s, &(ctx)->schemes, list)
@@ -1086,7 +1086,7 @@ void damon_destroy_target(struct damon_target *t, struct damon_ctx *ctx);
 unsigned int damon_nr_regions(struct damon_target *t);
 
 struct damon_report_filter *damon_new_report_filter(
-		enum damon_report_filter_type *filter_type, bool matching,
+		enum damon_report_filter_type filter_type, bool matching,
 		bool allow);
 void damon_add_report_filter(struct damon_access_check_control *ctrl,
 		struct damon_report_filter *filter);

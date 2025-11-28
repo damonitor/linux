@@ -563,7 +563,7 @@ unsigned int damon_nr_regions(struct damon_target *t)
 }
 
 struct damon_report_filter *damon_new_report_filter(
-		enum damon_report_filter_type *filter_type, bool matcing,
+		enum damon_report_filter_type filter_type, bool matching,
 		bool allow)
 {
 	struct damon_report_filter *filter;
@@ -600,6 +600,19 @@ void damon_destroy_report_filter(struct damon_report_filter *f,
 {
 	damon_del_report_filter(f, ctrl);
 	damon_free_report_filter(f);
+}
+
+static struct damon_report_filter *damon_nth_report_filter(int n,
+		struct damon_access_check_control *ctrl)
+{
+	struct damon_report_filter *f;
+	int i = 0;
+
+	damon_for_each_report_filter(f, ctrl) {
+		if (i++ == n)
+			return f;
+	}
+	return NULL;
 }
 
 struct damon_ctx *damon_new_ctx(void)
@@ -1317,6 +1330,66 @@ static int damon_commit_targets(
 	return 0;
 }
 
+static void damon_commit_report_filter_arg(struct damon_report_filter *dst,
+		struct damon_report_filter *src)
+{
+	switch (dst->type) {
+	case DAMON_FILTER_TYPE_CPUS:
+		dst->cpus = src->cpus;
+		break;
+	case DAMON_FILTER_TYPE_WRITE:
+		dst->write = src->write;
+		break;
+	default:
+		break;
+	}
+}
+
+static void damon_commit_report_filter(struct damon_report_filter *dst,
+		struct damon_report_filter *src)
+{
+	dst->matching = src->matching;
+	dst->allow = src->allow;
+	damon_commit_report_filter_arg(dst, src);
+}
+
+static int damon_commit_report_filters(struct damon_access_check_control *dst,
+		struct damon_access_check_control *src)
+{
+	struct damon_report_filter *dst_filter, *next, *src_filter, *new_filter;
+	int i = 0, j = 0;
+
+	damon_for_each_report_filter_safe(dst_filter, next, dst) {
+		src_filter = damon_nth_report_filter(i++, src);
+		if (src_filter)
+			damon_commit_report_filter(dst_filter, src_filter);
+		else
+			damon_destroy_report_filter(dst_filter, dst);
+	}
+
+	damon_for_each_report_filter_safe(src_filter, next, src) {
+		if (j++ < i)
+			continue;
+
+		new_filter = damon_new_report_filter(
+				src_filter->type, src_filter->matching,
+				src_filter->allow);
+		if (!new_filter)
+			return -ENOMEM;
+		damon_commit_report_filter_arg(new_filter, src_filter);
+		damon_add_report_filter(dst, new_filter);
+	}
+	return 0;
+}
+
+static int damon_commit_access_check_control(
+		struct damon_access_check_control *dst,
+		struct damon_access_check_control *src)
+{
+	dst->primitives_enablement = src->primitives_enablement;
+	return damon_commit_report_filters(dst, src);
+}
+
 /**
  * damon_commit_ctx() - Commit parameters of a DAMON context to another.
  * @dst:	The commit destination DAMON context.
@@ -1354,6 +1427,10 @@ int damon_commit_ctx(struct damon_ctx *dst, struct damon_ctx *src)
 	}
 	dst->ops = src->ops;
 	dst->ops_attrs = src->ops_attrs;
+	err = damon_commit_access_check_control(&dst->access_check_control,
+			&src->access_check_control);
+	if (err)
+		return err;
 	dst->addr_unit = src->addr_unit;
 	dst->min_sz_region = src->min_sz_region;
 
