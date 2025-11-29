@@ -594,7 +594,7 @@ static void damon_del_report_filter(struct damon_report_filter *f,
 	list_del(&f->list);
 }
 
-static void damon_free_report_filter(struct damon_report_filter *f)
+void damon_free_report_filter(struct damon_report_filter *f)
 {
 	kfree(f);
 }

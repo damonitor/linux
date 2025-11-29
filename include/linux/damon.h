@@ -1095,6 +1095,7 @@ struct damon_report_filter *damon_new_report_filter(
 		bool allow);
 void damon_add_report_filter(struct damon_access_check_control *ctrl,
 		struct damon_report_filter *filter);
+void damon_free_report_filter(struct damon_report_filter *filter);
 void damon_destroy_report_filter(struct damon_report_filter *filter,
 		struct damon_access_check_control *ctrl);
 
