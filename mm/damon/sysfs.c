@@ -2201,6 +2201,73 @@ static inline bool damon_sysfs_kdamond_running(
 		damon_is_running(kdamond->damon_ctx);
 }
 
+static int damon_sysfs_set_threads_filter(struct damon_report_filter *filter,
+		int *sysfs_tid_arr)
+{
+	int nr_tids, i;
+	pid_t *tid_arr;
+
+	if (!sysfs_tid_arr)
+		return -EINVAL;
+	nr_tids = sysfs_tid_arr[0];
+	tid_arr = kmalloc_array(nr_tids, sizeof(*tid_arr), GFP_KERNEL);
+	if (!tid_arr)
+		return -ENOMEM;
+	for (i = 0; i < nr_tids; i++)
+		tid_arr[i] = sysfs_tid_arr[i + 1];
+	filter->tid_arr = tid_arr;
+	filter->nr_tids = nr_tids;
+	return 0;
+}
+
+static int damon_sysfs_set_report_filters(
+		struct damon_access_check_control *control,
+		struct damon_sysfs_report_filters *sysfs_filters)
+{
+	int i, err;
+
+	for (i = 0; i < sysfs_filters->nr; i++) {
+		struct damon_sysfs_report_filter *sysfs_filter =
+			sysfs_filters->filters_arr[i];
+		struct damon_report_filter *filter;
+
+		filter = damon_new_report_filter(
+				sysfs_filter->type, sysfs_filter->matching,
+				sysfs_filter->allow);
+		if (!filter)
+			return -ENOMEM;
+		switch (filter->type) {
+		case DAMON_FILTER_TYPE_CPUMASK:
+			filter->cpumask = sysfs_filter->cpumask;
+			break;
+		case DAMON_FILTER_TYPE_THREADS:
+			err = damon_sysfs_set_threads_filter(filter,
+					sysfs_filter->tid_arr);
+			if (err)
+				damon_free_report_filter(filter);
+			break;
+		default:
+			break;
+		}
+		damon_add_report_filter(control, filter);
+	}
+	return 0;
+}
+
+
+static int damon_sysfs_set_access_check_control(
+		struct damon_access_check_control *control,
+		struct damon_sysfs_access_check *sysfs_access_check)
+{
+	control->primitives_enablement.page_table_scan =
+		sysfs_access_check->primitives->page_table;
+	control->primitives_enablement.page_faults_monitoring =
+		sysfs_access_check->primitives->page_faults;
+
+	return damon_sysfs_set_report_filters(control,
+			sysfs_access_check->filters);
+}
+
 static int damon_sysfs_set_ops_attrs_tids(
 		struct damon_operations_attrs *ops_attrs,
 		int *sysfs_tids)
@@ -2247,6 +2314,10 @@ static int damon_sysfs_apply_inputs(struct damon_ctx *ctx,
 		ctx->min_sz_region = max(
 				DAMON_MIN_REGION / sys_ctx->addr_unit, 1);
 	err = damon_sysfs_set_attrs(ctx, sys_ctx->attrs);
+	if (err)
+		return err;
+	err = damon_sysfs_set_access_check_control(&ctx->access_check_control,
+			sys_ctx->attrs->access_check);
 	if (err)
 		return err;
 	err = damon_sysfs_add_targets(ctx, sys_ctx->targets);
