@@ -1191,6 +1191,74 @@ static const struct kobj_type damon_sysfs_primitives_ktype = {
 };
 
 /*
+ * access_check directory
+ */
+
+struct damon_sysfs_access_check {
+	struct kobject kobj;
+	struct damon_sysfs_primitives *primitives;
+	struct damon_sysfs_report_filters *filters;
+};
+
+static struct damon_sysfs_access_check *damon_sysfs_access_check_alloc(void)
+{
+	struct damon_sysfs_access_check *access_check = kmalloc(
+			sizeof(*access_check), GFP_KERNEL);
+
+	if (!access_check)
+		return NULL;
+	access_check->kobj = (struct kobject){};
+	return access_check;
+}
+
+static int damon_sysfs_access_check_add_dirs(
+		struct damon_sysfs_access_check *access_check)
+{
+	struct damon_sysfs_primitives *primitives;
+	struct damon_sysfs_report_filters *filters;
+	int err;
+
+	primitives = damon_sysfs_primitives_alloc(true, false);
+	if (!primitives)
+		return -ENOMEM;
+	err = kobject_init_and_add(&primitives->kobj,
+			&damon_sysfs_primitives_ktype, &access_check->kobj,
+			"primitives");
+	if (err)
+		goto put_primitives_out;
+	access_check->primitives = primitives;
+
+	filters = damon_sysfs_report_filters_alloc();
+	if (!filters)
+		return -ENOMEM;
+	err = kobject_init_and_add(&filters->kobj,
+			&damon_sysfs_report_filters_ktype, &access_check->kobj,
+			"report_filters");
+	if (err)
+		goto put_filters_out;
+	access_check->filters = filters;
+	return 0;
+put_filters_out:
+	kobject_put(&filters->kobj);
+	access_check->filters = NULL;
+put_primitives_out:
+	kobject_put(&primitives->kobj);
+	access_check->primitives = NULL;
+	return err;
+}
+
+static void damon_sysfs_access_check_rm_dirs(
+		struct damon_sysfs_access_check *access_check)
+{
+	if (access_check->primitives)
+		kobject_put(&access_check->primitives->kobj);
+	if (access_check->filters) {
+		damon_sysfs_report_filters_rm_dirs(access_check->filters);
+		kobject_put(&access_check->filters->kobj);
+	}
+}
+
+/*
  * monitoring_attrs directory
  */
 
