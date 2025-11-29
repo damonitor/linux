@@ -759,6 +759,7 @@ struct damon_sysfs_report_filter {
 	bool matching;
 	bool allow;
 	cpumask_t cpumask;
+	int *tid_arr;	/* first entry is the length of the array */
 };
 
 static struct damon_sysfs_report_filter *damon_sysfs_report_filter_alloc(void)
@@ -892,6 +893,47 @@ static ssize_t cpumask_store(struct kobject *kobj, struct kobj_attribute *attr,
 	return count;
 }
 
+static ssize_t tid_arr_show(struct kobject *kobj, struct kobj_attribute *attr,
+		char *buf)
+{
+	struct damon_sysfs_report_filter *report_filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+	char *str;
+	int nr_tids, *tid_arr;
+	int i, ret;
+
+	if (!report_filter->tid_arr)
+		return sysfs_emit(buf, "\n");
+
+	str = kcalloc(2048, sizeof(*str), GFP_KERNEL);
+	if (!str)
+		return -ENOMEM;
+	nr_tids = report_filter->tid_arr[0];
+	tid_arr = &report_filter->tid_arr[1];
+	for (i = 0; i < nr_tids; i++) {
+		snprintf(&str[strlen(str)], 2048 - strlen(str), "%d",
+				tid_arr[i]);
+		if (i < nr_tids - 1)
+			snprintf(&str[strlen(str)], 2048 - strlen(str), ",");
+	}
+	ret = sysfs_emit(buf, "%s\n", str);
+	kfree(str);
+	return ret;
+}
+
+static ssize_t tid_arr_store(struct kobject *kobj, struct kobj_attribute *attr,
+		const char *buf, size_t count)
+{
+	struct damon_sysfs_report_filter *report_filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+	int err;
+
+	err = parse_int_array(buf, count, &report_filter->tid_arr);
+	if (err)
+		return err;
+	return count;
+}
+
 static void damon_sysfs_report_filter_release(struct kobject *kobj)
 {
 	struct damon_sysfs_report_filter *filter = container_of(kobj,
@@ -912,11 +954,15 @@ static struct kobj_attribute damon_sysfs_report_filter_allow_attr =
 static struct kobj_attribute damon_sysfs_report_filter_cpumask_attr =
 		__ATTR_RW_MODE(cpumask, 0600);
 
+static struct kobj_attribute damon_sysfs_report_filter_tid_arr_attr =
+		__ATTR_RW_MODE(tid_arr, 0600);
+
 static struct attribute *damon_sysfs_report_filter_attrs[] = {
 	&damon_sysfs_report_filter_type_attr.attr,
 	&damon_sysfs_report_filter_matching_attr.attr,
 	&damon_sysfs_report_filter_allow_attr.attr,
 	&damon_sysfs_report_filter_cpumask_attr.attr,
+	&damon_sysfs_report_filter_tid_arr_attr.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(damon_sysfs_report_filter);
