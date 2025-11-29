@@ -575,6 +575,10 @@ struct damon_report_filter *damon_new_report_filter(
 	filter->matching = matching;
 	filter->allow = allow;
 	INIT_LIST_HEAD(&filter->list);
+	if (filter_type == DAMON_FILTER_TYPE_THREADS) {
+		filter->tid_arr = NULL;
+		filter->nr_tids = 0;
+	}
 	return filter;
 }
 
@@ -599,6 +603,10 @@ void damon_destroy_report_filter(struct damon_report_filter *f,
 		struct damon_access_check_control *ctrl)
 {
 	damon_del_report_filter(f, ctrl);
+	if (f->type == DAMON_FILTER_TYPE_THREADS) {
+		kfree(f->tid_arr);
+		f->nr_tids = 0;
+	}
 	damon_free_report_filter(f);
 }
 
@@ -1335,40 +1343,61 @@ static int damon_commit_targets(
 	return 0;
 }
 
-static void damon_commit_report_filter_arg(struct damon_report_filter *dst,
+static int damon_commit_report_filter_arg(struct damon_report_filter *dst,
 		struct damon_report_filter *src)
 {
-	switch (dst->type) {
+	switch (src->type) {
 	case DAMON_FILTER_TYPE_CPUMASK:
 		dst->cpumask = src->cpumask;
+		break;
+	case DAMON_FILTER_TYPE_THREADS:
+		if (dst->type == DAMON_FILTER_TYPE_THREADS)
+			kfree(dst->tid_arr);
+		dst->tid_arr = kmalloc_array(src->nr_tids,
+				sizeof(*dst->tid_arr), GFP_KERNEL);
+		if (!dst->tid_arr)
+			return -ENOMEM;
+		memcpy(dst->tid_arr, src->tid_arr, sizeof(*dst->tid_arr) *
+				src->nr_tids);
+		dst->nr_tids = src->nr_tids;
 		break;
 	case DAMON_FILTER_TYPE_WRITE:
 		break;
 	default:
 		break;
 	}
+	return 0;
 }
 
-static void damon_commit_report_filter(struct damon_report_filter *dst,
+static int damon_commit_report_filter(struct damon_report_filter *dst,
 		struct damon_report_filter *src)
 {
+	int err;
+
+	err = damon_commit_report_filter_arg(dst, src);
+	if (err)
+		return err;
 	dst->matching = src->matching;
 	dst->allow = src->allow;
-	damon_commit_report_filter_arg(dst, src);
+	return 0;
 }
 
 static int damon_commit_report_filters(struct damon_access_check_control *dst,
 		struct damon_access_check_control *src)
 {
 	struct damon_report_filter *dst_filter, *next, *src_filter, *new_filter;
-	int i = 0, j = 0;
+	int i = 0, j = 0, err;
 
 	damon_for_each_report_filter_safe(dst_filter, next, dst) {
 		src_filter = damon_nth_report_filter(i++, src);
-		if (src_filter)
-			damon_commit_report_filter(dst_filter, src_filter);
-		else
+		if (src_filter) {
+			err = damon_commit_report_filter(dst_filter,
+					src_filter);
+			if (err)
+				return err;
+		} else {
 			damon_destroy_report_filter(dst_filter, dst);
+		}
 	}
 
 	damon_for_each_report_filter_safe(src_filter, next, src) {
@@ -1380,7 +1409,9 @@ static int damon_commit_report_filters(struct damon_access_check_control *dst,
 				src_filter->allow);
 		if (!new_filter)
 			return -ENOMEM;
-		damon_commit_report_filter_arg(new_filter, src_filter);
+		err = damon_commit_report_filter_arg(new_filter, src_filter);
+		if (err)
+			return err;
 		damon_add_report_filter(dst, new_filter);
 	}
 	return 0;
