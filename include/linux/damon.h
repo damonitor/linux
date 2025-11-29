@@ -849,10 +849,12 @@ struct damon_primitives_enablement {
  * enum damon_report_filter_type - Type of &struct damon_access_report to
  * filter.
  * @DAMON_FILTER_TYPE_CPUMASK:	Access-generated CPUs.
+ * @DAMON_FILTER_TYPE_THREADS:	Access-generated threads.
  * @DAMON_FILTER_TYPE_WRITE:	Whether the access was for writing.
  */
 enum damon_report_filter_type {
 	DAMON_FILTER_TYPE_CPUMASK,
+	DAMON_FILTER_TYPE_THREADS,
 	DAMON_FILTER_TYPE_WRITE,
 };
 
@@ -862,13 +864,20 @@ enum damon_report_filter_type {
  * @matching:	Whether it is for condition-matching reports.
  * @allow:	Whether to include or excludie the @matching reports.
  * @cpumask:	Access-originated CPUs if @type is DAMON_FILTER_TYPE_CPUMASK.
+ * @tid_arr:	Access-originated thread ids array, if @type is
+ *		DAMON_FILTER_TYPE_THREADS.
+ * @nr_tids:	Size of @tid_arr, if @type is DAMON_FILTER_TYPE_THREADS.
  * @list:	List head for siblings.
  */
 struct damon_report_filter {
 	enum damon_report_filter_type type;
 	bool matching;
 	bool allow;
-	cpumask_t cpumask;
+	union {
+		cpumask_t cpumask;
+		pid_t *tid_arr;
+		int nr_tids;
+	};
 	struct list_head list;
 };
 
