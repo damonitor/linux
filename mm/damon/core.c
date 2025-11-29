@@ -664,11 +664,16 @@ static void damon_destroy_targets(struct damon_ctx *ctx)
 void damon_destroy_ctx(struct damon_ctx *ctx)
 {
 	struct damos *s, *next_s;
+	struct damon_report_filter *f, *next_f;
 
 	damon_destroy_targets(ctx);
 
 	damon_for_each_scheme_safe(s, next_s, ctx)
 		damon_destroy_scheme(s);
+
+	damon_for_each_report_filter_safe(f, next_f,
+			(&ctx->access_check_control))
+		damon_destroy_report_filter(f, &ctx->access_check_control);
 
 	if (ctx->ops_attrs.nr_tids)
 		kfree(ctx->ops_attrs.tids);
