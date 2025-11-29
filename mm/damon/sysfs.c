@@ -774,7 +774,7 @@ struct damon_sysfs_report_filter_type_name {
 static const struct damon_sysfs_report_filter_type_name
 damon_sysfs_report_filter_type_names[] = {
 	{
-		.type = DAMON_FILTER_TYPE_CPUS,
+		.type = DAMON_FILTER_TYPE_CPUMASK,
 		.name = "cpumask",
 	},
 	{

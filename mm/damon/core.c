@@ -1334,8 +1334,8 @@ static void damon_commit_report_filter_arg(struct damon_report_filter *dst,
 		struct damon_report_filter *src)
 {
 	switch (dst->type) {
-	case DAMON_FILTER_TYPE_CPUS:
-		dst->cpus = src->cpus;
+	case DAMON_FILTER_TYPE_CPUMASK:
+		dst->cpumask = src->cpumask;
 		break;
 	case DAMON_FILTER_TYPE_WRITE:
 		break;
