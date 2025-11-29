@@ -859,7 +859,7 @@ enum damon_report_filter_type {
 /**
  * struct damon_report_filter - &struct damon_access_report filter.
  * @type:	The type of this filter.
- * @matching:	Whether is is for condition-matching reports.
+ * @matching:	Whether it is for condition-matching reports.
  * @allow:	Whether to include or excludie the @matching reports.
  * @cpus:	Access-originated CPUs if @type is DAMON_FILTER_TYPE_CPUS.
  * @list:	List head for siblings.
