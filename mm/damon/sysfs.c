@@ -750,6 +750,184 @@ static const struct kobj_type damon_sysfs_intervals_ktype = {
 };
 
 /*
+ * access check report filter directory
+ */
+
+struct damon_sysfs_report_filter {
+	struct kobject kobj;
+	enum damon_report_filter_type type;
+	bool matching;
+	bool allow;
+	cpumask_t cpumask;
+};
+
+static struct damon_sysfs_report_filter *damon_sysfs_report_filter_alloc(void)
+{
+	return kzalloc(sizeof(struct damon_sysfs_report_filter), GFP_KERNEL);
+}
+
+struct damon_sysfs_report_filter_type_name {
+	enum damon_report_filter_type type;
+	char *name;
+};
+
+static const struct damon_sysfs_report_filter_type_name
+damon_sysfs_report_filter_type_names[] = {
+	{
+		.type = DAMON_FILTER_TYPE_CPUS,
+		.name = "cpumask",
+	},
+	{
+		.type = DAMON_FILTER_TYPE_WRITE,
+		.name = "write",
+	},
+};
+
+static ssize_t type_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+	int i = 0;
+
+	for (; i < ARRAY_SIZE(damon_sysfs_report_filter_type_names); i++) {
+		const struct damon_sysfs_report_filter_type_name *type_name;
+
+		type_name = &damon_sysfs_report_filter_type_names[i];
+		if (type_name->type == filter->type)
+			return sysfs_emit(buf, "%s\n", type_name->name);
+	}
+	return -EINVAL;
+}
+
+static ssize_t type_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+	ssize_t ret = -EINVAL;
+	int i = 0;
+
+	for (; i < ARRAY_SIZE(damon_sysfs_report_filter_type_names); i++) {
+		const struct damon_sysfs_report_filter_type_name *type_name;
+
+		type_name = &damon_sysfs_report_filter_type_names[i];
+		if (sysfs_streq(buf, type_name->name)) {
+			filter->type = type_name->type;
+			ret = count;
+			break;
+		}
+	}
+	return ret;
+}
+
+static ssize_t matching_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+
+	return sysfs_emit(buf, "%c\n", filter->matching ? 'Y' : 'N');
+}
+
+static ssize_t matching_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+	bool matching;
+	int err = kstrtobool(buf, &matching);
+
+	if (err)
+		return err;
+
+	filter->matching = matching;
+	return count;
+}
+
+static ssize_t allow_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+
+	return sysfs_emit(buf, "%c\n", filter->allow ? 'Y' : 'N');
+}
+
+static ssize_t allow_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+	bool allow;
+	int err = kstrtobool(buf, &allow);
+
+	if (err)
+		return err;
+
+	filter->allow = allow;
+	return count;
+}
+
+static ssize_t cpumask_show(struct kobject *kobj, struct kobj_attribute *attr,
+		char *buf)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+
+	return sysfs_emit(buf, "%*pbl\n", cpumask_pr_args(&filter->cpumask));
+}
+
+static ssize_t cpumask_store(struct kobject *kobj, struct kobj_attribute *attr,
+		const char *buf, size_t count)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+	cpumask_t cpumask;
+	int err = cpulist_parse(buf, &cpumask);
+
+	if (err)
+		return err;
+	filter->cpumask = cpumask;
+	return count;
+}
+
+static void damon_sysfs_report_filter_release(struct kobject *kobj)
+{
+	struct damon_sysfs_report_filter *filter = container_of(kobj,
+			struct damon_sysfs_report_filter, kobj);
+
+	kfree(filter);
+}
+
+static struct kobj_attribute damon_sysfs_report_filter_type_attr =
+		__ATTR_RW_MODE(type, 0600);
+
+static struct kobj_attribute damon_sysfs_report_filter_matching_attr =
+		__ATTR_RW_MODE(matching, 0600);
+
+static struct kobj_attribute damon_sysfs_report_filter_allow_attr =
+		__ATTR_RW_MODE(allow, 0600);
+
+static struct kobj_attribute damon_sysfs_report_filter_cpumask_attr =
+		__ATTR_RW_MODE(cpumask, 0600);
+
+static struct attribute *damon_sysfs_report_filter_attrs[] = {
+	&damon_sysfs_report_filter_type_attr.attr,
+	&damon_sysfs_report_filter_matching_attr.attr,
+	&damon_sysfs_report_filter_allow_attr.attr,
+	&damon_sysfs_report_filter_cpumask_attr.attr,
+	NULL,
+};
+ATTRIBUTE_GROUPS(damon_sysfs_report_filter);
+
+static const struct kobj_type damon_sysfs_report_filter_ktype = {
+	.release = damon_sysfs_report_filter_release,
+	.sysfs_ops = &kobj_sysfs_ops,
+	.default_groups = damon_sysfs_report_filter_groups,
+};
+
+/*
  * access check primitives directory
  */
 
