@@ -928,6 +928,125 @@ static const struct kobj_type damon_sysfs_report_filter_ktype = {
 };
 
 /*
+ * access check report filters directory
+ */
+
+struct damon_sysfs_report_filters {
+	struct kobject kobj;
+	struct damon_sysfs_report_filter **filters_arr;
+	int nr;
+};
+
+static struct damon_sysfs_report_filters *
+damon_sysfs_report_filters_alloc(void)
+{
+	return kzalloc(sizeof(struct damon_sysfs_report_filters), GFP_KERNEL);
+}
+
+static void damon_sysfs_report_filters_rm_dirs(
+		struct damon_sysfs_report_filters *filters)
+{
+	struct damon_sysfs_report_filter **filters_arr = filters->filters_arr;
+	int i;
+
+	for (i = 0; i < filters->nr; i++)
+		kobject_put(&filters_arr[i]->kobj);
+	filters->nr = 0;
+	kfree(filters_arr);
+	filters->filters_arr = NULL;
+}
+
+static int damon_sysfs_report_filters_add_dirs(
+		struct damon_sysfs_report_filters *filters, int nr_filters)
+{
+	struct damon_sysfs_report_filter **filters_arr, *filter;
+	int err, i;
+
+	damon_sysfs_report_filters_rm_dirs(filters);
+	if (!nr_filters)
+		return 0;
+
+	filters_arr = kmalloc_array(nr_filters, sizeof(*filters_arr),
+			GFP_KERNEL | __GFP_NOWARN);
+	if (!filters_arr)
+		return -ENOMEM;
+	filters->filters_arr = filters_arr;
+
+	for (i = 0; i < nr_filters; i++) {
+		filter = damon_sysfs_report_filter_alloc();
+		if (!filter) {
+			damon_sysfs_report_filters_rm_dirs(filters);
+			return -ENOMEM;
+		}
+
+		err = kobject_init_and_add(&filter->kobj,
+				&damon_sysfs_report_filter_ktype,
+				&filters->kobj, "%d", i);
+		if (err) {
+			kobject_put(&filter->kobj);
+			damon_sysfs_report_filters_rm_dirs(filters);
+			return err;
+		}
+
+		filters_arr[i] = filter;
+		filters->nr++;
+	}
+	return 0;
+}
+
+static ssize_t nr_filters_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	struct damon_sysfs_report_filters *filters = container_of(kobj,
+			struct damon_sysfs_report_filters, kobj);
+
+	return sysfs_emit(buf, "%d\n", filters->nr);
+}
+
+static ssize_t nr_filters_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	struct damon_sysfs_report_filters *filters;
+	int nr, err = kstrtoint(buf, 0, &nr);
+
+	if (err)
+		return err;
+	if (nr < 0)
+		return -EINVAL;
+
+	filters = container_of(kobj, struct damon_sysfs_report_filters, kobj);
+
+	if (!mutex_trylock(&damon_sysfs_lock))
+		return -EBUSY;
+	err = damon_sysfs_report_filters_add_dirs(filters, nr);
+	mutex_unlock(&damon_sysfs_lock);
+	if (err)
+		return err;
+
+	return count;
+}
+
+static void damon_sysfs_report_filters_release(struct kobject *kobj)
+{
+	kfree(container_of(kobj, struct damon_sysfs_report_filters, kobj));
+}
+
+static struct kobj_attribute damon_sysfs_report_filters_nr_attr =
+		__ATTR_RW_MODE(nr_filters, 0600);
+
+static struct attribute *damon_sysfs_report_filters_attrs[] = {
+	&damon_sysfs_report_filters_nr_attr.attr,
+	NULL,
+};
+ATTRIBUTE_GROUPS(damon_sysfs_report_filters);
+
+static const struct kobj_type damon_sysfs_report_filters_ktype = {
+	.release = damon_sysfs_report_filters_release,
+	.sysfs_ops = &kobj_sysfs_ops,
+	.default_groups = damon_sysfs_report_filters_groups,
+};
+
+/*
  * access check primitives directory
  */
 
