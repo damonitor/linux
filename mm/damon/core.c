@@ -1417,10 +1417,19 @@ static int damon_commit_report_filters(struct damon_access_check_control *dst,
 	return 0;
 }
 
+static bool damon_primitives_enablement_invalid(
+		struct damon_primitives_enablement *config)
+{
+	return config->page_table_scan == config->page_faults_monitoring;
+}
+
 static int damon_commit_access_check_control(
 		struct damon_access_check_control *dst,
 		struct damon_access_check_control *src)
 {
+	if (damon_primitives_enablement_invalid(&src->primitives_enablement))
+		return -EINVAL;
+
 	dst->primitives_enablement = src->primitives_enablement;
 	return damon_commit_report_filters(dst, src);
 }
