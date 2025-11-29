@@ -1258,6 +1258,22 @@ static void damon_sysfs_access_check_rm_dirs(
 	}
 }
 
+static void damon_sysfs_access_check_release(struct kobject *kobj)
+{
+	kfree(container_of(kobj, struct damon_sysfs_access_check, kobj));
+}
+
+static struct attribute *damon_sysfs_access_check_attrs[] = {
+	NULL,
+};
+ATTRIBUTE_GROUPS(damon_sysfs_access_check);
+
+static const struct kobj_type damon_sysfs_access_check_ktype = {
+	.release = damon_sysfs_access_check_release,
+	.sysfs_ops = &kobj_sysfs_ops,
+	.default_groups = damon_sysfs_access_check_groups,
+};
+
 /*
  * monitoring_attrs directory
  */
