@@ -1282,6 +1282,7 @@ struct damon_sysfs_attrs {
 	struct kobject kobj;
 	struct damon_sysfs_intervals *intervals;
 	struct damon_sysfs_ul_range *nr_regions_range;
+	struct damon_sysfs_access_check *access_check;
 };
 
 static struct damon_sysfs_attrs *damon_sysfs_attrs_alloc(void)
@@ -1298,6 +1299,7 @@ static int damon_sysfs_attrs_add_dirs(struct damon_sysfs_attrs *attrs)
 {
 	struct damon_sysfs_intervals *intervals;
 	struct damon_sysfs_ul_range *nr_regions_range;
+	struct damon_sysfs_access_check *access_check;
 	int err;
 
 	intervals = damon_sysfs_intervals_alloc(5000, 100000, 60000000);
@@ -1326,8 +1328,26 @@ static int damon_sysfs_attrs_add_dirs(struct damon_sysfs_attrs *attrs)
 	if (err)
 		goto put_nr_regions_intervals_out;
 	attrs->nr_regions_range = nr_regions_range;
+
+	access_check = damon_sysfs_access_check_alloc();
+	if (!access_check) {
+		err = -ENOMEM;
+		goto put_nr_regions_intervals_out;
+	}
+	err = kobject_init_and_add(&access_check->kobj,
+			&damon_sysfs_access_check_ktype, &attrs->kobj,
+			"access_check");
+	if (err)
+		goto put_access_check_out;
+	err = damon_sysfs_access_check_add_dirs(access_check);
+	if (err)
+		goto put_access_check_out;
+	attrs->access_check = access_check;
 	return 0;
 
+put_access_check_out:
+	kobject_put(&access_check->kobj);
+	attrs->access_check = NULL;
 put_nr_regions_intervals_out:
 	kobject_put(&nr_regions_range->kobj);
 	attrs->nr_regions_range = NULL;
@@ -1344,6 +1364,8 @@ static void damon_sysfs_attrs_rm_dirs(struct damon_sysfs_attrs *attrs)
 	kobject_put(&attrs->nr_regions_range->kobj);
 	damon_sysfs_intervals_rm_dirs(attrs->intervals);
 	kobject_put(&attrs->intervals->kobj);
+	damon_sysfs_access_check_rm_dirs(attrs->access_check);
+	kobject_put(&attrs->access_check->kobj);
 }
 
 static void damon_sysfs_attrs_release(struct kobject *kobj)
