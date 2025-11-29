@@ -875,8 +875,10 @@ struct damon_report_filter {
 	bool allow;
 	union {
 		cpumask_t cpumask;
-		pid_t *tid_arr;
-		int nr_tids;
+		struct {
+			pid_t *tid_arr;
+			int nr_tids;
+		};
 	};
 	struct list_head list;
 };
