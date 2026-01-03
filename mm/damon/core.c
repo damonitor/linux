@@ -116,6 +116,22 @@ int damon_select_ops(struct damon_ctx *ctx, enum damon_ops_id id)
 	return err;
 }
 
+#ifdef CONFIG_DAMON_HARDENED
+static void damon_verify_new_region(unsigned long start, unsigned long end)
+{
+
+	if (start < end)
+		return;
+	pr_err("damon_new_region() s called with start %lu and end %lu!\n",
+			start, end);
+	BUG();
+}
+#else
+static void damon_verify_new_region(unsigned long start, unsigned long end)
+{
+}
+#endif
+
 /*
  * Construct a damon_region struct
  *
@@ -128,6 +144,8 @@ struct damon_region *damon_new_region(unsigned long start, unsigned long end)
 	region = kmem_cache_alloc(damon_region_cache, GFP_KERNEL);
 	if (!region)
 		return NULL;
+
+	damon_verify_new_region(start, end);
 
 	region->ar.start = start;
 	region->ar.end = end;
