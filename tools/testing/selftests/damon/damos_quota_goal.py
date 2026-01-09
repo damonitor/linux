@@ -33,8 +33,7 @@ def main():
     score_values_to_test = [0, 15000, 5000, 18000]
     while proc.poll() == None:
         if len(score_values_to_test) == 0:
-            time.sleep(0.1)
-            continue
+            break
 
         goal.current_value = score_values_to_test.pop(0)
         expect_increase = goal.current_value < goal.target_value
@@ -75,6 +74,7 @@ def main():
                   (expect_increase, increased))
             exit(1)
         last_effective_bytes = goal.effective_bytes
+    proc.terminate()
 
 if __name__ == '__main__':
     main()

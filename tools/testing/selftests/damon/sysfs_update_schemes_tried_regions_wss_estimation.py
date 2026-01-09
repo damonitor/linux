@@ -36,6 +36,9 @@ def main():
 
         wss_collected.append(
                 kdamonds.kdamonds[0].contexts[0].schemes[0].tried_bytes)
+        if len(wss_collected) == 40:
+            break
+    proc.terminate()
 
     wss_collected.sort()
     percentile = 75

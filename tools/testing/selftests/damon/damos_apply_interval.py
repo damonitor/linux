@@ -41,12 +41,17 @@ def main():
 
     wss_collected = []
     nr_quota_exceeds = 0
+    nr_tried = 0
     while proc.poll() == None:
         time.sleep(0.1)
         err = kdamonds.kdamonds[0].update_schemes_stats()
         if err != None:
             print('stats update failed: %s' % err)
             exit(1)
+        nr_tried += 1
+        if nr_tried == 40:
+            break
+    proc.terminate()
     schemes = kdamonds.kdamonds[0].contexts[0].schemes
     nr_tried_stats = [s.stats.nr_tried for s in schemes]
     if nr_tried_stats[0] == 0 or nr_tried_stats[1] == 0:

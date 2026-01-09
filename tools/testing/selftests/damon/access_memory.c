@@ -31,11 +31,13 @@ int main(int argc, char *argv[])
 	for (i = 0; i < nr_regions; i++)
 		regions[i] = malloc(sz_region);
 
-	for (i = 0; i < nr_regions; i++) {
-		start_clock = clock();
-		while ((clock() - start_clock) * 1000 / CLOCKS_PER_SEC <
-				access_time_ms)
-			memset(regions[i], i, sz_region);
+	while (1) {
+		for (i = 0; i < nr_regions; i++) {
+			start_clock = clock();
+			while ((clock() - start_clock) * 1000 / CLOCKS_PER_SEC
+					< access_time_ms)
+				memset(regions[i], i, sz_region);
+		}
 	}
 	return 0;
 }
