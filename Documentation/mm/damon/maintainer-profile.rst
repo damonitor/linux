@@ -48,9 +48,6 @@ Further doing below and putting the results will be helpful.
 - Run `damon-tests/corr
   <https://github.com/damonitor/damon-tests/tree/master/corr>`_ for normal
   changes.
-- Run `damon-tests/perf
-  <https://github.com/damonitor/damon-tests/tree/master/perf>`_ for performance
-  changes.
 
 Key cycle dates
 ---------------
