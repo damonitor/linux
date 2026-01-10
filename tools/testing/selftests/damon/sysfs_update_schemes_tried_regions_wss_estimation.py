@@ -9,7 +9,8 @@ import _damon_sysfs
 def main():
     # access two 10 MiB memory regions, 2 second per each
     sz_region = 10 * 1024 * 1024
-    proc = subprocess.Popen(['./access_memory', '2', '%d' % sz_region, '2000'])
+    proc = subprocess.Popen([
+        './access_memory', '2', '%d' % sz_region, '2000', 'repeat'])
     kdamonds = _damon_sysfs.Kdamonds([_damon_sysfs.Kdamond(
             contexts=[_damon_sysfs.DamonCtx(
                 ops='vaddr',
@@ -27,7 +28,7 @@ def main():
         exit(1)
 
     wss_collected = []
-    while proc.poll() == None:
+    while proc.poll() is None and len(wss_collected) < 40:
         time.sleep(0.1)
         err = kdamonds.kdamonds[0].update_schemes_tried_bytes()
         if err != None:
@@ -36,6 +37,7 @@ def main():
 
         wss_collected.append(
                 kdamonds.kdamonds[0].contexts[0].schemes[0].tried_bytes)
+    proc.terminate()
 
     wss_collected.sort()
     percentile = 75
