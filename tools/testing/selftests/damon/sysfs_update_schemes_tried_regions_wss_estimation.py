@@ -1,10 +1,24 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0
 
+import os
 import subprocess
 import time
 
 import _damon_sysfs
+
+ksft_skip = 4
+
+def get_total_mem_bytes():
+    if not os.path.isfile('/proc/meminfo'):
+        return None, 'meminfo file not found'
+    with open('/proc/meminfo', 'r') as f:
+        for line in f:
+            fields = line.split()
+            if fields[0] != 'MemTotal:':
+                continue
+            return int(fields[1]) * 1024, None
+    return None, 'MemTotal line not found'
 
 def is_test_passed(wss_collected, estimated_wss):
     wss_collected.sort()
@@ -12,7 +26,6 @@ def is_test_passed(wss_collected, estimated_wss):
     nr_collections = len(wss_collected)
     sample = wss_collected[int(nr_collections * percentile / 100)]
     error_rate = abs(sample - estimated_wss) / estimated_wss
-    print('number of collections: %d' % nr_collections)
     print('%d-th percentile (%d) error %f' %
             (percentile, sample, error_rate))
 
@@ -25,14 +38,21 @@ def is_test_passed(wss_collected, estimated_wss):
     return False
 
 def main():
-    # access two 10 MiB memory regions, 2 second per each
-    sz_region = 10 * 1024 * 1024
+    total_mem_bytes, err = get_total_mem_bytes()
+    if err is not None:
+        print('getting total mem size fail (%s)' % err)
+        exit(ksft_skip)
+    sz_region = total_mem_bytes / 10
     proc = subprocess.Popen([
-        './access_memory', '2', '%d' % sz_region, '2000', 'repeat'])
+        './access_memory', '1', '%d' % sz_region, '1000', 'repeat'])
     kdamonds = _damon_sysfs.Kdamonds([_damon_sysfs.Kdamond(
             contexts=[_damon_sysfs.DamonCtx(
                 ops='vaddr',
                 targets=[_damon_sysfs.DamonTarget(pid=proc.pid)],
+                monitoring_attrs=_damon_sysfs.DamonAttrs(
+                    intervals_goal=_damon_sysfs.IntervalsGoal(
+                        access_bp=400, aggrs=3, min_sample_us=5000,
+                        max_sample_us=10000000)),
                 schemes=[_damon_sysfs.Damos(
                     access_pattern=_damon_sysfs.DamosAccessPattern(
                         # >= 25% access rate, >= 200ms age
@@ -47,6 +67,7 @@ def main():
 
     test_passed = False
     wss_collected = []
+    nr_failures = 0
     while proc.poll() is None:
         time.sleep(0.1)
         err = kdamonds.kdamonds[0].update_schemes_tried_bytes()
@@ -58,12 +79,15 @@ def main():
                 kdamonds.kdamonds[0].contexts[0].schemes[0].tried_bytes)
 
         nr_collections = len(wss_collected)
-        if nr_collections > 0 and nr_collections % 40 == 0:
+        if nr_collections == 40:
             test_passed = is_test_passed(wss_collected, sz_region)
             if test_passed:
                 break
-            if nr_collections >= 1000:
+            nr_failures += 1
+            if nr_failures > 10:
                 break
+            print('\n'.join(['%d' % wss for wss in wss_collected]))
+            wss_collected = []
     proc.terminate()
 
     if test_passed is True:
