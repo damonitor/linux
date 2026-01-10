@@ -35,6 +35,8 @@ def is_test_passed(wss_collected, estimated_wss):
 
     print('the error rate is not acceptable (> %f)' %
             acceptable_error_rate)
+    print('samples are as below')
+    print('\n'.join(['%d' % wss for wss in wss_collected]))
     return False
 
 def main():
@@ -42,6 +44,8 @@ def main():
     if err is not None:
         print('getting total mem size fail (%s)' % err)
         exit(ksft_skip)
+
+    # repeatedly access 10% of total memory
     sz_region = total_mem_bytes / 10
     proc = subprocess.Popen([
         './access_memory', '1', '%d' % sz_region, '1000', 'repeat'])
@@ -50,6 +54,7 @@ def main():
                 ops='vaddr',
                 targets=[_damon_sysfs.DamonTarget(pid=proc.pid)],
                 monitoring_attrs=_damon_sysfs.DamonAttrs(
+                    # auto-tune intervals with the default suggestion
                     intervals_goal=_damon_sysfs.IntervalsGoal(
                         access_bp=400, aggrs=3, min_sample_us=5000,
                         max_sample_us=10000000)),
@@ -68,7 +73,7 @@ def main():
     test_passed = False
     wss_collected = []
     nr_failures = 0
-    while proc.poll() is None:
+    while proc.poll() is None and nr_failures < 10:
         time.sleep(0.1)
         err = kdamonds.kdamonds[0].update_schemes_tried_bytes()
         if err != None:
@@ -84,17 +89,11 @@ def main():
             if test_passed:
                 break
             nr_failures += 1
-            if nr_failures > 10:
-                break
-            print('\n'.join(['%d' % wss for wss in wss_collected]))
             wss_collected = []
     proc.terminate()
 
     if test_passed is True:
         return
-
-    print('samples are as below')
-    print('\n'.join(['%d' % wss for wss in wss_collected]))
     exit(1)
 
 if __name__ == '__main__':
