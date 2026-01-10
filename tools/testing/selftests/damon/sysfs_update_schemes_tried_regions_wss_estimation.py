@@ -22,25 +22,28 @@ def get_total_mem_bytes():
 
 def is_test_passed(wss_collected, expected_wss):
     wss_collected.sort()
-    percentile = 75
     nr_collections = len(wss_collected)
-    sample = wss_collected[int(nr_collections * percentile / 100)]
-    error_rate = abs(sample - expected_wss) / expected_wss
-    print('%d-th percentile (%d) error %f' %
-            (percentile, sample, error_rate))
 
-    acceptable_error_rate = 0.2
-    if error_rate < acceptable_error_rate:
-        return True
+    for percentile in [50, 75]:
+        sample = wss_collected[int(nr_collections * percentile / 100)]
+        error_rate = abs(sample - expected_wss) / expected_wss
+        print('%d-th percentile (%d) error %f' %
+                (percentile, sample, error_rate))
 
-    print('the error rate is not acceptable (> %f)' %
-            acceptable_error_rate)
-    for percentile in [0, 25, 50, 65, 75, 85, 95, 100]:
-        idx = min(int(nr_collections * percentile / 100), nr_collections - 1)
-        print('%3d-th percentile: %20d (error %f)' %
-              (percentile, wss_collected[idx],
-               abs(wss_collected[idx] - expected_wss) / expected_wss))
-    return False
+        acceptable_error_rate = 0.2
+        if error_rate < acceptable_error_rate:
+            continue
+
+        print('the error rate is not acceptable (> %f)' %
+                acceptable_error_rate)
+        for percentile in [0, 25, 50, 65, 75, 85, 95, 100]:
+            idx = min(int(nr_collections * percentile / 100),
+                      nr_collections - 1)
+            print('%3d-th percentile: %20d (error %f)' %
+                  (percentile, wss_collected[idx],
+                   abs(wss_collected[idx] - expected_wss) / expected_wss))
+        return False
+    return True
 
 def main():
     total_mem_bytes, err = get_total_mem_bytes()
