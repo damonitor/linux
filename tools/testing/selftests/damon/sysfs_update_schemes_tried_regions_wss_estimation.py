@@ -35,8 +35,11 @@ def is_test_passed(wss_collected, estimated_wss):
 
     print('the error rate is not acceptable (> %f)' %
             acceptable_error_rate)
-    print('samples are as below')
-    print('\n'.join(['%d' % wss for wss in wss_collected]))
+    for percentile in [0, 25, 50, 65, 75, 85, 95, 100]:
+        idx = min(int(nr_collections * percentile / 100), nr_collections - 1)
+        print('%3d-th percentile: %20d (error %f)' %
+              (percentile, wss_collected[idx],
+               abs(wss_collected[idx] - estimated_wss) / estimated_wss))
     return False
 
 def main():
