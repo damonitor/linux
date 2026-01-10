@@ -20,12 +20,12 @@ def get_total_mem_bytes():
             return int(fields[1]) * 1024, None
     return None, 'MemTotal line not found'
 
-def is_test_passed(wss_collected, estimated_wss):
+def is_test_passed(wss_collected, expected_wss):
     wss_collected.sort()
     percentile = 75
     nr_collections = len(wss_collected)
     sample = wss_collected[int(nr_collections * percentile / 100)]
-    error_rate = abs(sample - estimated_wss) / estimated_wss
+    error_rate = abs(sample - expected_wss) / expected_wss
     print('%d-th percentile (%d) error %f' %
             (percentile, sample, error_rate))
 
@@ -39,7 +39,7 @@ def is_test_passed(wss_collected, estimated_wss):
         idx = min(int(nr_collections * percentile / 100), nr_collections - 1)
         print('%3d-th percentile: %20d (error %f)' %
               (percentile, wss_collected[idx],
-               abs(wss_collected[idx] - estimated_wss) / estimated_wss))
+               abs(wss_collected[idx] - expected_wss) / expected_wss))
     return False
 
 def main():
