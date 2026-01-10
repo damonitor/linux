@@ -49,9 +49,6 @@ def main():
         scheme = kdamonds.kdamonds[0].contexts[0].schemes[0]
         wss_collected.append(scheme.tried_bytes)
         nr_quota_exceeds = scheme.stats.qt_exceeds
-        if len(wss_collected) == 40:
-            break
-    proc.terminate()
 
     wss_collected.sort()
     nr_expected_quota_exceeds = 0
