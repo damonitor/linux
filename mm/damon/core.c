@@ -166,8 +166,24 @@ void damon_add_region(struct damon_region *r, struct damon_target *t)
 	t->nr_regions++;
 }
 
+#ifdef CONFIG_DAMON_HARDENED
+static void damon_verify_del_region(struct damon_target *t)
+{
+	if (t->nr_regions > 0)
+		return;
+	pr_err("nr_regions <=0 but damon_call_region called\n");
+	BUG();
+}
+#else
+static void damon_verify_del_region(struct damon_target *t)
+{
+}
+#endif
+
 static void damon_del_region(struct damon_region *r, struct damon_target *t)
 {
+	damon_verify_del_region(t);
+
 	list_del(&r->list);
 	t->nr_regions--;
 }
