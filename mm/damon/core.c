@@ -3371,10 +3371,13 @@ static int kdamond_fn(void *data)
 			max_nr_accesses = ctx->ops.check_accesses(ctx);
 
 		if (time_after_eq(ctx->passed_sample_intervals,
-					next_aggregation_sis))
+					next_aggregation_sis)) {
 			kdamond_merge_regions(ctx,
 					max_nr_accesses / 10,
 					sz_limit);
+			/* online updates might be made */
+			sz_limit = damon_apply_min_nr_regions(ctx);
+		}
 
 		/*
 		 * do kdamond_call() and kdamond_apply_schemes() after
@@ -3434,7 +3437,6 @@ static int kdamond_fn(void *data)
 				sample_interval;
 			if (ctx->ops.update)
 				ctx->ops.update(ctx);
-			sz_limit = damon_region_sz_limit(ctx);
 		}
 	}
 done:
