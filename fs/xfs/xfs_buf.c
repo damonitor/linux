@@ -145,7 +145,7 @@ xfs_buf_alloc_kmem(
 	ASSERT(is_power_of_2(size));
 	ASSERT(size < PAGE_SIZE);
 
-	bp->b_addr = kmalloc(size, gfp_mask | __GFP_NOFAIL);
+	bp->b_addr = kmalloc(size, gfp_mask);
 	if (!bp->b_addr)
 		return -ENOMEM;
 
@@ -230,7 +230,7 @@ xfs_buf_alloc_backing_mem(
 	 * smaller than PAGE_SIZE buffers used by XFS.
 	 */
 	if (size < PAGE_SIZE && is_power_of_2(size))
-		return xfs_buf_alloc_kmem(bp, size, gfp_mask);
+		return xfs_buf_alloc_kmem(bp, size, gfp_mask | __GFP_NOFAIL);
 
 	/*
 	 * Don't bother with the retry loop for single PAGE allocations: vmalloc
