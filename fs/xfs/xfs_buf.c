@@ -121,6 +121,22 @@ xfs_buf_free(
 }
 
 static int
+xfs_buf_alloc_folio(
+	struct xfs_buf		*bp,
+	size_t			size,
+	gfp_t			gfp_mask)
+{
+	struct folio		*folio;
+
+	folio = folio_alloc(gfp_mask, get_order(size));
+	if (!folio)
+		return -ENOMEM;
+	bp->b_addr = folio_address(folio);
+	trace_xfs_buf_backing_folio(bp, _RET_IP_);
+	return 0;
+}
+
+static int
 xfs_buf_alloc_kmem(
 	struct xfs_buf		*bp,
 	size_t			size,
@@ -145,6 +161,27 @@ xfs_buf_alloc_kmem(
 	}
 	bp->b_flags |= _XBF_KMEM;
 	trace_xfs_buf_backing_kmem(bp, _RET_IP_);
+	return 0;
+}
+
+static int
+xfs_buf_alloc_vmalloc(
+	struct xfs_buf		*bp,
+	size_t			size,
+	gfp_t			gfp_mask,
+	xfs_buf_flags_t		flags)
+{
+	for (;;) {
+		bp->b_addr = __vmalloc(size, gfp_mask);
+		if (bp->b_addr)
+			break;
+		if (flags & XBF_READ_AHEAD)
+			return -ENOMEM;
+		XFS_STATS_INC(bp->b_mount, xb_page_retries);
+		memalloc_retry_wait(gfp_mask);
+	}
+
+	trace_xfs_buf_backing_vmalloc(bp, _RET_IP_);
 	return 0;
 }
 
@@ -175,7 +212,6 @@ xfs_buf_alloc_backing_mem(
 {
 	size_t		size = BBTOB(bp->b_length);
 	gfp_t		gfp_mask = GFP_KERNEL | __GFP_NOLOCKDEP | __GFP_NOWARN;
-	struct folio	*folio;
 
 	if (xfs_buftarg_is_mem(bp->b_target))
 		return xmbuf_map_backing_mem(bp);
@@ -216,33 +252,16 @@ xfs_buf_alloc_backing_mem(
 	 */
 	if (size > PAGE_SIZE) {
 		if (!is_power_of_2(size))
-			goto fallback;
+			return xfs_buf_alloc_vmalloc(bp, size, gfp_mask, flags);
 		gfp_mask &= ~__GFP_DIRECT_RECLAIM;
 		gfp_mask |= __GFP_NORETRY;
 	}
-	folio = folio_alloc(gfp_mask, get_order(size));
-	if (!folio) {
+	if (xfs_buf_alloc_folio(bp, size, gfp_mask) < 0) {
 		if (size <= PAGE_SIZE)
 			return -ENOMEM;
 		trace_xfs_buf_backing_fallback(bp, _RET_IP_);
-		goto fallback;
+		return xfs_buf_alloc_vmalloc(bp, size, gfp_mask, flags);
 	}
-	bp->b_addr = folio_address(folio);
-	trace_xfs_buf_backing_folio(bp, _RET_IP_);
-	return 0;
-
-fallback:
-	for (;;) {
-		bp->b_addr = __vmalloc(size, gfp_mask);
-		if (bp->b_addr)
-			break;
-		if (flags & XBF_READ_AHEAD)
-			return -ENOMEM;
-		XFS_STATS_INC(bp->b_mount, xb_page_retries);
-		memalloc_retry_wait(gfp_mask);
-	}
-
-	trace_xfs_buf_backing_vmalloc(bp, _RET_IP_);
 	return 0;
 }
 
