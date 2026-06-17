@@ -224,22 +224,6 @@ xfs_buf_alloc_backing_mem(
 		gfp_mask |= __GFP_NORETRY;
 
 	/*
-	 * For buffers smaller than PAGE_SIZE use a kmalloc allocation if that
-	 * is properly aligned.  The slab allocator now guarantees an aligned
-	 * allocation for all power of two sizes, which matches most of the
-	 * smaller than PAGE_SIZE buffers used by XFS.
-	 */
-	if (size < PAGE_SIZE && is_power_of_2(size))
-		return xfs_buf_alloc_kmem(bp, size, gfp_mask | __GFP_NOFAIL);
-
-	/*
-	 * Don't bother with the retry loop for single PAGE allocations: vmalloc
-	 * won't do any better.
-	 */
-	if (size <= PAGE_SIZE)
-		gfp_mask |= __GFP_NOFAIL;
-
-	/*
 	 * Optimistically attempt a single high order folio allocation for
 	 * larger than PAGE_SIZE buffers.
 	 *
@@ -251,18 +235,31 @@ xfs_buf_alloc_backing_mem(
 	 * path for them instead of wasting memory here.
 	 */
 	if (size > PAGE_SIZE) {
-		if (!is_power_of_2(size))
-			return xfs_buf_alloc_vmalloc(bp, size, gfp_mask, flags);
-		gfp_mask &= ~__GFP_DIRECT_RECLAIM;
-		gfp_mask |= __GFP_NORETRY;
-	}
-	if (xfs_buf_alloc_folio(bp, size, gfp_mask) < 0) {
-		if (size <= PAGE_SIZE)
-			return -ENOMEM;
-		trace_xfs_buf_backing_fallback(bp, _RET_IP_);
+		if (is_power_of_2(size)) {
+			gfp_t folio_gfp = gfp_mask;
+
+			folio_gfp &= ~__GFP_DIRECT_RECLAIM;
+			folio_gfp |= __GFP_NORETRY;
+			if (xfs_buf_alloc_folio(bp, size, folio_gfp) == 0)
+				return 0;
+			trace_xfs_buf_backing_fallback(bp, _RET_IP_);
+		}
 		return xfs_buf_alloc_vmalloc(bp, size, gfp_mask, flags);
 	}
-	return 0;
+
+	/*
+	 * The slab allocator now guarantees aligned allocations for all power
+	 * of two sizes.  This covers most smaller XFS buffers, so just use
+	 * kmalloc in this case.
+	 *
+	 * Don't bother with the vmalloc fallback for allocations of page size
+	 * or less: vmalloc won't do any better.
+	 */
+	if (!(gfp_mask & __GFP_NORETRY))
+		gfp_mask |= __GFP_NOFAIL;
+	if (size < PAGE_SIZE && is_power_of_2(size))
+		return xfs_buf_alloc_kmem(bp, size, gfp_mask);
+	return xfs_buf_alloc_folio(bp, size, gfp_mask);
 }
 
 static int
