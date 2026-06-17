@@ -168,14 +168,13 @@ static int
 xfs_buf_alloc_vmalloc(
 	struct xfs_buf		*bp,
 	size_t			size,
-	gfp_t			gfp_mask,
-	xfs_buf_flags_t		flags)
+	gfp_t			gfp_mask)
 {
 	for (;;) {
 		bp->b_addr = __vmalloc(size, gfp_mask);
 		if (bp->b_addr)
 			break;
-		if (flags & XBF_READ_AHEAD)
+		if (gfp_mask & __GFP_NORETRY)
 			return -ENOMEM;
 		XFS_STATS_INC(bp->b_mount, xb_page_retries);
 		memalloc_retry_wait(gfp_mask);
@@ -244,7 +243,7 @@ xfs_buf_alloc_backing_mem(
 				return 0;
 			trace_xfs_buf_backing_fallback(bp, _RET_IP_);
 		}
-		return xfs_buf_alloc_vmalloc(bp, size, gfp_mask, flags);
+		return xfs_buf_alloc_vmalloc(bp, size, gfp_mask);
 	}
 
 	/*
