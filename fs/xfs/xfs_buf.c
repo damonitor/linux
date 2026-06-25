@@ -1147,18 +1147,6 @@ __xfs_buf_ioend(
 }
 
 static void
-xfs_buf_ioend(
-	struct xfs_buf	*bp)
-{
-	if (!__xfs_buf_ioend(bp))
-		return;
-	if (bp->b_flags & XBF_ASYNC)
-		xfs_buf_relse(bp);
-	else
-		complete(&bp->b_iowait);
-}
-
-static void
 xfs_buf_ioend_work(
 	struct work_struct	*work)
 {
@@ -1207,7 +1195,8 @@ xfs_buf_fail(
 	bp->b_flags &= ~XBF_DONE;
 	xfs_buf_stale(bp);
 	xfs_buf_ioerror(bp, -EIO);
-	xfs_buf_ioend(bp);
+	if (__xfs_buf_ioend(bp))
+		xfs_buf_relse(bp);
 }
 
 int
@@ -1415,7 +1404,12 @@ ioerror:
 	bp->b_flags &= ~XBF_DONE;
 	xfs_buf_stale(bp);
 end_io:
-	xfs_buf_ioend(bp);
+	if (!__xfs_buf_ioend(bp))
+		return;
+	if (bp->b_flags & XBF_ASYNC)
+		xfs_buf_relse(bp);
+	else
+		complete(&bp->b_iowait);
 }
 
 /*
