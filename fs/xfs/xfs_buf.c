@@ -1098,11 +1098,17 @@ out_stale:
 	return false;
 }
 
-/* returns false if the caller needs to resubmit the I/O, else true */
-static bool
-__xfs_buf_ioend(
+/*
+ * Complete a buffer read or write.
+ *
+ * Releases the buffer if the I/O was asynchronous.
+ */
+static void
+xfs_buf_ioend(
 	struct xfs_buf	*bp)
 {
+	bool		async = bp->b_flags & XBF_ASYNC;
+
 	trace_xfs_buf_iodone(bp, _RET_IP_);
 
 	if (bp->b_flags & XBF_READ) {
@@ -1116,13 +1122,15 @@ __xfs_buf_ioend(
 		if (bp->b_flags & XBF_READ_AHEAD)
 			percpu_counter_dec(&bp->b_target->bt_readahead_count);
 	} else {
-		if (!bp->b_error) {
+		if (unlikely(bp->b_error)) {
+			if (xfs_buf_ioend_handle_error(bp)) {
+				ASSERT(async);
+				return;
+			}
+		} else {
 			bp->b_flags &= ~XBF_WRITE_FAIL;
 			bp->b_flags |= XBF_DONE;
 		}
-
-		if (unlikely(bp->b_error) && xfs_buf_ioend_handle_error(bp))
-			return false;
 
 		/* clear the retry state */
 		bp->b_last_error = 0;
@@ -1143,18 +1151,15 @@ __xfs_buf_ioend(
 
 	bp->b_flags &= ~(XBF_READ | XBF_WRITE | XBF_READ_AHEAD |
 			 _XBF_LOGRECOVERY);
-	return true;
+	if (async)
+		xfs_buf_relse(bp);
 }
 
 static void
 xfs_buf_ioend_work(
 	struct work_struct	*work)
 {
-	struct xfs_buf		*bp =
-		container_of(work, struct xfs_buf, b_ioend_work);
-
-	if (__xfs_buf_ioend(bp))
-		xfs_buf_relse(bp);
+	xfs_buf_ioend(container_of(work, struct xfs_buf, b_ioend_work));
 }
 
 void
@@ -1195,8 +1200,7 @@ xfs_buf_fail(
 	bp->b_flags &= ~XBF_DONE;
 	xfs_buf_stale(bp);
 	xfs_buf_ioerror(bp, -EIO);
-	if (__xfs_buf_ioend(bp))
-		xfs_buf_relse(bp);
+	xfs_buf_ioend(bp);
 }
 
 int
@@ -1305,12 +1309,11 @@ xfs_buf_iowait(
 {
 	ASSERT(!(bp->b_flags & XBF_ASYNC));
 
-	do {
-		trace_xfs_buf_iowait(bp, _RET_IP_);
-		wait_for_completion(&bp->b_iowait);
-		trace_xfs_buf_iowait_done(bp, _RET_IP_);
-	} while (!__xfs_buf_ioend(bp));
+	trace_xfs_buf_iowait(bp, _RET_IP_);
+	wait_for_completion(&bp->b_iowait);
+	trace_xfs_buf_iowait_done(bp, _RET_IP_);
 
+	xfs_buf_ioend(bp);
 	return bp->b_error;
 }
 
@@ -1404,12 +1407,10 @@ ioerror:
 	bp->b_flags &= ~XBF_DONE;
 	xfs_buf_stale(bp);
 end_io:
-	if (bp->b_flags & XBF_ASYNC) {
-		if (__xfs_buf_ioend(bp))
-			xfs_buf_relse(bp);
-	} else {
+	if (bp->b_flags & XBF_ASYNC)
+		xfs_buf_ioend(bp);
+	else
 		complete(&bp->b_iowait);
-	}
 }
 
 /*
