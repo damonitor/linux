@@ -1192,17 +1192,18 @@ xfs_buf_ioerror_alert(
 }
 
 /*
- * To simulate an I/O failure, the buffer must be locked and held with at least
- * two references.
+ * Fail a locked and referenced buffer outside the I/O path.
  *
- * The buf item reference is dropped via ioend processing. The second reference
- * is owned by the caller and is dropped on I/O completion if the buffer is
- * XBF_ASYNC.
+ * The caller transfers a reference which will be released after processing the
+ * error.
  */
 void
-xfs_buf_ioend_fail(
+xfs_buf_fail(
 	struct xfs_buf	*bp)
 {
+	ASSERT(xfs_buf_islocked(bp));
+
+	bp->b_flags |= XBF_ASYNC;
 	bp->b_flags &= ~XBF_DONE;
 	xfs_buf_stale(bp);
 	xfs_buf_ioerror(bp, -EIO);
