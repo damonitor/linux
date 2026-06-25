@@ -1383,10 +1383,8 @@ xfs_buf_submit(
 	 * state here rather than mount state to avoid corrupting the log tail
 	 * on shutdown.
 	 */
-	if (bp->b_mount->m_log && xlog_is_shutdown(bp->b_mount->m_log)) {
-		xfs_buf_ioend_fail(bp);
-		return;
-	}
+	if (bp->b_mount->m_log && xlog_is_shutdown(bp->b_mount->m_log))
+		goto ioerror;
 
 	if (bp->b_flags & XBF_WRITE)
 		xfs_buf_wait_unpin(bp);
@@ -1399,17 +1397,22 @@ xfs_buf_submit(
 
 	if ((bp->b_flags & XBF_WRITE) && !xfs_buf_verify_write(bp)) {
 		xfs_force_shutdown(bp->b_mount, SHUTDOWN_CORRUPT_INCORE);
-		xfs_buf_ioend(bp);
-		return;
+		goto end_io;
 	}
 
 	/* In-memory targets are directly mapped, no I/O required. */
-	if (xfs_buftarg_is_mem(bp->b_target)) {
-		xfs_buf_ioend(bp);
-		return;
-	}
+	if (xfs_buftarg_is_mem(bp->b_target))
+		goto end_io;
 
 	xfs_buf_submit_bio(bp);
+	return;
+
+ioerror:
+	bp->b_flags &= ~XBF_DONE;
+	xfs_buf_stale(bp);
+	xfs_buf_ioerror(bp, -EIO);
+end_io:
+	xfs_buf_ioend(bp);
 }
 
 /*
