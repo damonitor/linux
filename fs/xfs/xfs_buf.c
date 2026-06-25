@@ -1404,12 +1404,12 @@ ioerror:
 	bp->b_flags &= ~XBF_DONE;
 	xfs_buf_stale(bp);
 end_io:
-	if (!__xfs_buf_ioend(bp))
-		return;
-	if (bp->b_flags & XBF_ASYNC)
-		xfs_buf_relse(bp);
-	else
+	if (bp->b_flags & XBF_ASYNC) {
+		if (__xfs_buf_ioend(bp))
+			xfs_buf_relse(bp);
+	} else {
 		complete(&bp->b_iowait);
+	}
 }
 
 /*
