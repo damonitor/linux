@@ -70,14 +70,14 @@
 #include <xen/gntalloc.h>
 #include <xen/events.h>
 
-static int limit = 1024;
-module_param(limit, int, 0644);
+static unsigned int limit = 1024;
+module_param(limit, uint, 0644);
 MODULE_PARM_DESC(limit, "Maximum number of grants that may be allocated by "
 		"the gntalloc device");
 
 static LIST_HEAD(gref_list);
 static DEFINE_MUTEX(gref_mutex);
-static int gref_size;
+static unsigned int gref_size;
 
 struct notify_info {
 	uint16_t pgoff:12;    /* Bits 0-11: Offset of the byte to clear */
