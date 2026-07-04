@@ -122,7 +122,7 @@ static void damon_pa_prep_probes_region(struct damon_region *r,
 	}
 }
 
-static void damon_pa_prep_probes(struct damon_ctx *ctx)
+static void damon_pa_prep_probes(struct damon_ctx *ctx, bool set_samples)
 {
 	struct damon_target *t;
 	struct damon_region *r;
@@ -130,6 +130,9 @@ static void damon_pa_prep_probes(struct damon_ctx *ctx)
 
 	damon_for_each_target(t, ctx) {
 		damon_for_each_region(r, t) {
+			if (set_samples)
+				r->sampling_addr = damon_rand(ctx, r->ar.start,
+						r->ar.end);
 			damon_for_each_probe(p, ctx)
 				damon_pa_prep_probes_region(r, p, ctx);
 		}
