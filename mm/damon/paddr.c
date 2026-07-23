@@ -448,11 +448,16 @@ static unsigned long damon_pa_migrate(struct damon_region *r,
 
 	addr = damon_pa_phys_addr(r->ar.start, addr_unit);
 	while (addr < damon_pa_phys_addr(r->ar.end, addr_unit)) {
+		phys_addr_t folio_addr;
+
 		folio = damon_get_folio(PHYS_PFN(addr));
 		if (damon_pa_invalid_damos_folio(folio, s)) {
 			addr += PAGE_SIZE;
 			continue;
 		}
+		folio_addr = PFN_PHYS(folio_pfn(folio));
+		if (folio_addr < addr)
+			goto put_folio;
 
 		if (damos_pa_filter_out(s, folio))
 			goto put_folio;
@@ -463,7 +468,7 @@ static unsigned long damon_pa_migrate(struct damon_region *r,
 			goto put_folio;
 		list_add(&folio->lru, &folio_list);
 put_folio:
-		addr += folio_size(folio);
+		addr = folio_addr + folio_size(folio);
 		folio_put(folio);
 	}
 	applied = damon_migrate_pages(&folio_list, s->target_nid);
