@@ -2564,14 +2564,14 @@ static unsigned long damon_get_intervals_score(struct damon_ctx *c)
 }
 
 static unsigned long damon_feed_loop_next_input(unsigned long last_input,
-		unsigned long score);
+		unsigned long score, bool positive);
 
 static unsigned long damon_get_intervals_adaptation_bp(struct damon_ctx *c)
 {
 	unsigned long score_bp, adaptation_bp;
 
 	score_bp = damon_get_intervals_score(c);
-	adaptation_bp = damon_feed_loop_next_input(100000000, score_bp) /
+	adaptation_bp = damon_feed_loop_next_input(100000000, score_bp, true) /
 		10000;
 	/*
 	 * adaptation_bp ranges from 1 to 20,000.  Avoid too rapid reduction of
@@ -3061,16 +3061,22 @@ static void damos_apply_target(struct damon_ctx *c, struct damon_target *t,
  * damon_feed_loop_next_input() - get next input to achieve a target score.
  * @last_input	The last input.
  * @score	Current score that made with @last_input.
+ * @positive	If this is a positive feed loop.
  *
  * Calculate next input to achieve the target score, based on the last input
- * and current score.  Assuming the input and the score are positively
- * proportional, calculate how much compensation should be added to or
- * subtracted from the last input as a proportion of the last input.  Avoid
- * next input always being zero by setting it non-zero always.  In short form
- * (assuming support of float and signed calculations), the algorithm is as
- * below.
+ * and current score.  Assuming the input and the score are proportional,
+ * calculate how much compensation should be added to or subtracted from the
+ * last input as a proportion of the last input.  Whether the proportionality
+ * is positive or negative is determined by @positive.   Avoid next input
+ * always being zero by setting it non-zero always.  In short form (assuming
+ * support of float and signed calculations), the algorithm is as below for
+ * positively proportional (@positive is true) case.
  *
  * next_input = max(last_input * ((goal - current) / goal + 1), 1)
+ *
+ * If it is negatively proportional (@positive is false), it becomes below.
+ *
+ * next_input = max(last_input * ((curent - goal) / goal + 1), 1)
  *
  * For simple implementation, we assume the target score is always 10,000.  The
  * caller should adjust @score for this.
@@ -3078,23 +3084,26 @@ static void damos_apply_target(struct damon_ctx *c, struct damon_target *t,
  * Returns next input that assumed to achieve the target score.
  */
 static unsigned long damon_feed_loop_next_input(unsigned long last_input,
-		unsigned long score)
+		unsigned long score, bool positive)
 {
 	const unsigned long goal = 10000;
 	/* Set minimum input as 10000 to avoid compensation be zero */
 	const unsigned long min_input = 10000;
 	unsigned long score_goal_diff, compensation;
-	bool over_achieving = score > goal;
 
 	if (score == goal)
 		return last_input;
-	if (score >= goal * 2)
+	if ((positive && score >= goal * 2) || (!positive && !score))
 		return min_input;
+	score = min(score, goal * 2);
 
 	score_goal_diff = abs_diff(score, goal);
 	compensation = mult_frac(last_input, score_goal_diff, goal);
 
-	if (over_achieving)
+	if (score > goal)
+		positive = !positive;
+
+	if (!positive)
 		return max(last_input - compensation, min_input);
 	if (last_input < ULONG_MAX - compensation)
 		return last_input + compensation;
@@ -3423,7 +3432,7 @@ static void damos_goal_tune_esz_bp_consist(struct damon_ctx *c, struct damos *s)
 	unsigned long score = damos_quota_score(c, s);
 
 	quota->esz_bp = damon_feed_loop_next_input(
-			max(quota->esz_bp, 10000UL), score);
+			max(quota->esz_bp, 10000UL), score, true);
 }
 
 static void damos_goal_tune_esz_bp_temporal(struct damon_ctx *c,

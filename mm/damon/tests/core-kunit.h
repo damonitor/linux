@@ -1644,32 +1644,32 @@ out:
 static void damon_test_feed_loop_next_input(struct kunit *test)
 {
 	unsigned long last_input = 900000, current_score = 200;
+	bool positive_loop = true;
 
 	/*
 	 * If current score is lower than the goal, which is always 10,000
 	 * (read the comment on damon_feed_loop_next_input()'s comment), next
 	 * input should be higher than the last input.
 	 */
-	KUNIT_EXPECT_GT(test,
-			damon_feed_loop_next_input(last_input, current_score),
-			last_input);
+	KUNIT_EXPECT_GT(test, damon_feed_loop_next_input(last_input,
+				current_score, positive_loop), last_input);
 
 	/*
 	 * If current score is higher than the goal, next input should be lower
 	 * than the last input.
 	 */
 	current_score = 250000000;
-	KUNIT_EXPECT_LT(test,
-			damon_feed_loop_next_input(last_input, current_score),
-			last_input);
+	KUNIT_EXPECT_LT(test, damon_feed_loop_next_input(last_input,
+				current_score, positive_loop), last_input);
 
 	/*
 	 * The next input depends on the distance between the current score and
 	 * the goal
 	 */
-	KUNIT_EXPECT_GT(test,
-			damon_feed_loop_next_input(last_input, 200),
-			damon_feed_loop_next_input(last_input, 2000));
+	KUNIT_EXPECT_GT(test, damon_feed_loop_next_input(last_input, 200,
+				positive_loop),
+			damon_feed_loop_next_input(last_input, 2000,
+				positive_loop));
 }
 
 static void damon_test_set_filters_default_reject(struct kunit *test)
