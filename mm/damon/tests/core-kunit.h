@@ -1670,6 +1670,19 @@ static void damon_test_feed_loop_next_input(struct kunit *test)
 				positive_loop),
 			damon_feed_loop_next_input(last_input, 2000,
 				positive_loop));
+
+	/* For negative feed loop, all the assumptions are converted. */
+	positive_loop = false;
+	current_score = 200;
+	KUNIT_EXPECT_LT(test, damon_feed_loop_next_input(last_input,
+				current_score, positive_loop), last_input);
+	current_score = 250000000;
+	KUNIT_EXPECT_GT(test, damon_feed_loop_next_input(last_input,
+				current_score, positive_loop), last_input);
+	KUNIT_EXPECT_LT(test, damon_feed_loop_next_input(last_input, 200,
+				positive_loop),
+			damon_feed_loop_next_input(last_input, 2000,
+				positive_loop));
 }
 
 static void damon_test_set_filters_default_reject(struct kunit *test)
