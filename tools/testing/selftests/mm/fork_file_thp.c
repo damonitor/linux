@@ -235,7 +235,7 @@ int main(void)
 {
 	ksft_print_header();
 	pagesize = getpagesize();
-	pmdsize = read_pmd_pagesize();
+	pmdsize = pmd_psize();
 	if (!pmdsize)
 		ksft_exit_skip("THP is not supported\n");
 	if (pmdsize > MAX_PMDSIZE)
